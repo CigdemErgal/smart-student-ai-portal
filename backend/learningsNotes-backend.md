@@ -3,7 +3,7 @@
 ## Proje
 
 - Proje: SmartStudent AI Portal
-- Katmanlı Mimari: Controller -> Service -> Model
+- Katmanli Mimari: Controller -> Service -> Model
 - Odak: OWASP Top 10, Docker, Redis, TypeScript
 
 ## Gunluk Kayit
@@ -31,7 +31,7 @@
   - `cors`: frontend-backend erisim kontrolu.
   - `helmet`: temel HTTP guvenlik basliklari.
   - `express-rate-limit`: brute-force ve abuse korumasi.
-  - `zod`: girdi dogrulama (OWASP A03).
+  - `zod`: girdi dogrulama.
   - `bcryptjs`: parola hashleme.
   - `jsonwebtoken`: JWT tabanli kimlik dogrulama.
   - `redis`: cache ve hizlandirma.
@@ -52,34 +52,247 @@
   - `include/exclude` alanlarini `compilerOptions` disina tasidim.
   - `app.ts` icinde `export default app` kullanip `server.ts` icinde `import app from './app'` ile eslestirdim.
   - Duzeltme sonrasi `npm run build` basariyla gecti.
-- Ogrendigim en onemli 3 sey:
+- Ogrendigim en onemli seyler:
   - Scriptler, gelistirme ve production akisinin temelidir.
-  - Runtime ve dev dependency ayrimi kritik.
+  - Runtime ve dev dependency ayrimi kritiktir.
   - Guvenlik paketleri Day 1'de eklenirse sonraki adimlar daha saglam olur.
-  - TypeScript projede tooling kurmadan kod yazmaya baslamak teknik borc olusturur.
-  - Middleware sirasi (app -> guvenlik -> parser -> route) dogru olmazsa beklenmeyen davranis olusur.
+  - Middleware sirasi dogru olmazsa beklenmeyen davranis olusabilir.
   - Uzun klasor yapilarini terminalde tek komutla olusturmak zaman kazandirir.
 
-#### Pratik Terminal Komutu (Tekrar Kullan)
+#### Pratik Terminal Komutu
 
-- Backend `src` altinda klasorleri tek komutla terminalden olusturmak icin:
+- Backend `src` altinda klasorleri tek komutla olusturmak icin:
   - `New-Item -ItemType Directory -Force -Path backend/src/controllers,backend/src/services,backend/src/models,backend/src/routes,backend/src/middlewares,backend/src/validation,backend/src/utils,backend/src/interfaces,backend/src/constants`
 
 ### Gun 2 - Auth ve Guvenlik
 
 - Bugun ne yaptim:
+  - `backend/src/user` altinda domain bazli auth klasorlerini actim:
+    - `model`
+    - `repository`
+    - `service`
+    - `controller`
+    - `validation`
+    - `routes`
+  - `User` modelini yazdim.
+  - `registerSchema` ve `loginSchema` ile validation yapisini kurdum.
+  - `registerUser` service'i ile email tekrar kontrolu yaptim.
+  - `bcryptjs` ile register sirasinda password hashleme ekledim.
+  - `loginUser` service'i icinde `bcrypt.compare()` ile parola dogrulama kurdum.
+  - `registerController` ve `loginController` yazdim.
+  - `auth.routes.ts` icinde `POST /register` ve `POST /login` route'larini tanimladim.
+  - `app.ts` icinde auth route'unu `/api/v1/auth` altina bagladim.
+  - `safeUser` mantigi ile response icinden `password` alanini cikardim.
+  - `authMiddleware` ile token kontrolu ekledim.
+  - Express `Request` tipini genisletip `req.user` problemini cozdum.
+  - `authorizeRoles` middleware'i ile role tabanli yetkilendirme baslangicini ekledim.
+  - `GET /api/v1/auth/admin` ornek korumali route'unu olusturdum.
 - JWT ve role tabanli yetki notlari:
+  - `role` alanini en bastan modele koymak dogru, cunku yetkilendirme daha sonra bu alan uzerinden kurulacak.
+  - Role kontrol middleware'ini hemen yazmiyoruz; once register/login temel akisinin calismasi gerekiyor.
+  - JWT daha sonra login sonrasi kimlik bilgisini tasimak icin eklenecek.
 - OWASP ile ilgili uyguladigim maddeler:
-- Karsilastigim hata:
+  - Hassas veri minimizasyonu: `tckn` gibi hassas alanlari ilk auth modeline hemen eklemiyorum.
+  - Password guvenligi: parola modelde alan olarak var ama asla duz metin saklanmiyor; `bcrypt` ile hashleniyor.
+  - Input validation: auth istekleri icin ayri validation katmani kullaniyorum.
+  - Response minimizasyonu: login/register response'unda `password` alanini istemciye donmuyorum.
+  - Least privilege mantigi: role tabanli yetkiyi kontrollu sekilde daha sonra ekleyecegim.
+  - Authentication ve authorization ayrimini middleware seviyesinde baslattim.
+- Karsilastigim hatalar:
+  - Dosya isimlendirmesinde standart farki oldu.
+  - Gereksiz import ekleme hatasi yaptim.
+  - Controller icinde `try/catch` kayboldugu an oldu.
+  - Route mount sirasinda middleware once gelmesi gerektigini tekrar ettim.
+  - `req.user` ifadesinde TypeScript hatasi aldim, cunku varsayilan Express `Request` tipinde `user` alani yoktu.
 - Cozum:
+  - Type/interface isimlerinde PascalCase kullanmayi not ettim.
+  - Gereksiz importlari kontrol etmeyi aliskanlik yapmaliyim.
+  - Once middleware, sonra route mantigini netlestirdim.
+  - Once sade ve calisan auth yapisi, sonra guvenlik sertlestirmesi mantigi ile ilerliyorum.
+  - `src/types/express/index.d.ts` ile `Request` tipini genislettim.
+
+#### Gun 2 Kavram Notlari
+
+- `timestamps: true`
+  - Mongoose bu ayar ile `createdAt` ve `updatedAt` alanlarini otomatik ekler.
+  - Kaydin ne zaman olusturuldugunu ve ne zaman guncellendigini takip etmemi saglar.
+- `isActive`
+  - Kullanici hesabinin aktif mi pasif mi oldugunu tutar.
+  - Kullaniciyi tamamen silmeden devre disi birakmak icin kullanilabilir.
+- `default: true`
+  - Bu alan kullanici olusturulurken verilmezse Mongoose otomatik olarak `true` atar.
+- `IUser`
+  - TypeScript interface'idir.
+  - `User` nesnesinde hangi alanlarin ve hangi tiplerin oldugunu tanimlar.
+- `createdAt: Date`
+  - Bu alanin veri tipi tarih-zamandir.
+  - String veya boolean degil, zaman bilgisini temsil eder.
+- `import mongoose, { Schema, Document } from "mongoose"`
+  - `mongoose`: model olusturmak icin.
+  - `Schema`: alan yapisini tanimlamak icin.
+  - `Document`: TypeScript tarafinda Mongoose document tipini temsil etmek icin.
+- `endpoint`
+  - Backend'de disaridan istek atilan adrestir.
+  - Ornek: `POST /api/v1/auth/register`
+  - Formul: ana yol + route dosyasindaki alt yol
+- `bcrypt.hash(password, 10)`
+  - Parolayi guvenli saklama formatina cevirir.
+  - `10`, hashleme zorluk seviyesidir.
+- `bcrypt.compare(duzParola, hashliParola)`
+  - Login sirasinda kullanicinin girdigi parola ile veritabanindaki hash'i karsilastirir.
+- `z.infer<typeof schema>`
+  - Zod schema'sindan TypeScript tipi uretir.
+  - Boylece validation ve type ayni kaynaktan gelir.
+- `LoginInput` / `RegisterInput`
+  - Validation schema'larindan uretilen TypeScript tipleridir.
+  - Service katmanina giden verinin seklini netlestirir.
+- `safeUser`
+  - Response'ta sadece gerekli alanlari dondurmek icin olusturulan guvenli objedir.
+  - `password` gibi hassas alanlari istemciye acmaz.
+- `authMiddleware`
+  - Gelen request'teki `Authorization: Bearer <token>` bilgisini kontrol eder.
+  - Token yoksa veya gecersizse `401` dondurur.
+- `authorizeRoles(...allowedRoles)`
+  - Kullanici giris yapmis olsa bile sadece izin verilen rollere erisim saglar.
+  - Yetki yoksa `403` dondurur.
+- `401` ve `403` farki
+  - `401`: kimlik dogrulama yok veya token gecersiz.
+  - `403`: kimlik dogrulama var ama yetki yok.
+
+#### Gun 2 Mikro Yol Haritasi
+
+- 1. `User` modelini temiz naming ile tamamla. [Tamamlandi]
+- 2. Register validation yaz. [Tamamlandi]
+- 3. Register service yaz. [Tamamlandi]
+- 4. Register controller yaz. [Tamamlandi]
+- 5. Register route yaz. [Tamamlandi]
+- 6. Register password hashleme (`bcrypt`) ekle. [Tamamlandi]
+- 7. Login validation yaz. [Tamamlandi]
+- 8. Login service yaz. [Tamamlandi]
+- 9. Login controller yaz. [Tamamlandi]
+- 10. Login route yaz. [Tamamlandi]
+- 11. Safe response uygula. [Tamamlandi]
+- 12. JWT utility ekle.
+- 12. JWT utility ekle. [Tamamlandi]
+- 13. Auth middleware ekle. [Tamamlandi]
+- 14. Role check baslangici ekle. [Tamamlandi]
 
 ### Gun 3 - Student CRUD
 
 - Bugun ne yaptim:
+  - `src/modules/student` altinda `controllers`, `services`, `models`, `routes`, `validations` klasor yapisini olusturdum.
+  - `Student` modelini yazdim.
+  - `Student` ile `User` arasinda `userId` referansi kurdum.
+  - `createStudentSchema` ile create student validation yazdim.
+  - `updateStudentSchema` ile update student validation yazdim.
+  - `createStudent` service'ini yazdim.
+  - `getAllStudents`, `getStudentById`, `updateStudent`, `deleteStudent` service'lerini yazdim.
+  - `createStudentController` yazdim.
+  - `getAllStudentsController`, `getStudentByIdController`, `updateStudentController`, `deleteStudentController` yazdim.
+  - `student.routes.ts` icinde `POST /` route'unu tanimladim.
+  - `GET /`, `GET /:id`, `PUT /:id`, `DELETE /:id` route'larini ekledim.
+  - `app.ts` icinde student route'unu `/api/v1/students` altina bagladim.
+  - Postman ile `POST /api/v1/students` endpoint'ini test ettim.
+  - `GET /api/v1/students` endpoint'ini test ettim.
+  - `GET /api/v1/students/:id` endpoint'ini test ettim.
+  - `PUT /api/v1/students/:id` endpoint'ini test ettim.
+  - `DELETE /api/v1/students/:id` endpoint'ini test ettim.
+  - MongoDB Atlas baglantisini `.env` icine ekleyip backend ile bagladim.
+  - Create student endpoint'inden `201 Created` cevabi aldim.
+  - Tum temel Student CRUD endpoint'lerinin calistigini dogruladim.
+  - Student route'larina `authMiddleware` ekledim.
+  - Student route'larina `authorizeRoles("admin")` ekleyerek ilk RBAC korumasini uyguladim.
+  - Student response'larini `safeStudentResponse` mantigi ile daha tutarli hale getirdim.
+  - `req.params.id` icin TypeScript tarafinda `string | string[] | undefined` uyarisi aldigim yerlerde koruyucu kontrol ekledim.
 - Validation kurallari:
+  - `firstName` ve `lastName` en az 2 karakter olacak.
+  - `studentNumber`, `className`, `section`, `schoolName`, `userId` zorunlu kabul edildi.
+  - `isActive` optional tutuldu.
+  - Request body dogrulamasi `zod` ile controller'a gelmeden once yapildi.
 - Service katmaninda is kurallari:
+  - Ayni `studentNumber` ile ikinci kayit acilmasin diye once `findOne` kontrolu yaptim.
+  - Yeni kaydi `Student.create()` ile service katmaninda olusturdum.
+  - `isActive` gelmezse `true` varsayilan mantigini korudum.
+  - `getStudentById` icinde kayit yoksa `Student not found` hatasi dondurdum.
+  - `updateStudent` icinde `findByIdAndUpdate(..., { new: true })` kullanarak guncel kaydi dondurdum.
+  - `deleteStudent` icinde kayit yoksa hata, varsa silme mantigi kurdum.
+  - Role bazli erisimi ilk asamada tum student route'lari icin sadece `admin` ile sinirladim.
 - Karsilastigim hata:
+  - Schema icinde `type: string` yazdigim icin Mongoose tip hatasi oldu.
+  - `student.controller.ts` icinde `_id`, `createdAt`, `updatedAt` alanlarinda TypeScript uyari verdi.
+  - `student.routes.ts` dosyasi ilk denemede olusturulmamis oldugu icin route bulunamadi.
+  - Postman'de yanlis endpoint ve yanlis port ile istek attigim icin `ECONNREFUSED` gordum.
+  - MongoDB baglantisi olmadigi icin `students.findOne() buffering timed out after 10000ms` hatasi aldim.
+  - `.env` dosyasi kok dizinde oldugu icin `MONGO_URI is not defined in environment variables` hatasi aldim.
+  - `npm run dev` komutunu kok dizinde calistirdigim icin `package.json` bulunamadi.
 - Cozum:
+  - Schema icinde `String`, TypeScript interface icinde `string` kullanmam gerektigini ogrendim.
+  - `IStudent extends Document` yapip `createdAt` ve `updatedAt` alanlarini interface'e ekledim.
+  - `student.routes.ts` dosyasini dogru klasorde olusturdum.
+  - Dogru test endpoint'inin `POST /api/v1/students` oldugunu netlestirdim.
+  - `src/config/db.ts` dosyasini olusturup `connectDB` fonksiyonunu yazdim.
+  - `server.ts` icinde `dotenv/config` import edip `connectDB()` cagrisi ekledim.
+  - `.env` dosyasini `backend/.env` altina tasidim.
+  - Local MongoDB yerine MongoDB Atlas connection string kullanarak baglantiyi kurdum.
+  - `Cast to ObjectId failed` hatasinin kayit yok anlamina gelmedigini, bazen bozuk `id` formati anlamina geldigini ogrendim.
+  - `GET by id` testinde URL sonuna fark edilmeden eklenen bosluk veya satir sonu karakterinin hataya neden olabildigini gordum.
+  - `req.params.id` degerini service'e gondermeden once kontrol ederek TypeScript union type uyarisini giderdim.
+  - `getAll`, `getById` ve `update` endpoint'lerinde ham Mongoose document dondurmek yerine kontrollu response yapisi kullandim.
+
+#### Gun 3 Kavram Notlari
+
+- `type: String` ve `firstName: string` farki
+  - `String`, Mongoose schema tanimidir.
+  - `string`, TypeScript tipidir.
+  - Biri veritabani yapisini, digeri uygulama icindeki tipi anlatir.
+- `userId`
+  - Auth mantigi degil, iliski alanidir.
+  - Hangi student kaydinin hangi `User` kaydina bagli oldugunu tutar.
+- `ref: "User"`
+  - Bu alanin `User` modeline referans verdigini soyler.
+- `Document`
+  - Mongoose document ozelliklerini TypeScript tarafina tasir.
+  - `_id` gibi alanlarin tip tarafinda taninmasini saglar.
+- `buffering timed out`
+  - Sorgu kodu calisti ama veritabani baglantisi hazir degildi.
+  - Bu hata genelde route degil, DB baglanti problemine isaret eder.
+- `ECONNREFUSED`
+  - Istek backend koduna bile ulasamadi.
+  - Genelde server kapali, yanlis port, ya da yanlis URL kullanildiginda gorulur.
+- `.env` konumu
+  - Uygulama hangi klasorde calisiyorsa `.env` dosyasi orada olmalidir.
+  - Bu projede `npm run dev` `backend` klasorunde calistigi icin `.env` de `backend/.env` icinde olmali.
+- `authMiddleware` ve `authorizeRoles` farki
+  - `authMiddleware`, kullanicinin giris yapip yapmadigini kontrol eder.
+  - `authorizeRoles`, giris yapan kullanicinin yetkili role sahip olup olmadigini kontrol eder.
+- Middleware sirasi
+  - Once `authMiddleware`, sonra `authorizeRoles`, en son controller gelmelidir.
+  - Cunku rol kontrolu yapmadan once kullanicinin kimligi dogrulanmis olmalidir.
+- `safeStudentResponse`
+  - Controller icinde response'a cikacak alanlari tek noktadan secmek icin yardimci fonksiyondur.
+  - Response tutarliligini artirir ve gereksiz alanlarin disa cikmasini azaltir.
+- `req.params.id` tipi neden problem oldu
+  - TypeScript, route parametresinin her zaman duz `string` oldugundan emin degildi.
+  - Bu yuzden service sadece `string` beklerken controller tarafinda once kontrol eklemek gerekti.
+
+#### Gun 3 Mikro Yol Haritasi
+
+- 1. Student domain klasor yapisini netlestir. [Tamamlandi]
+- 2. Student model alanlarini planla. [Tamamlandi]
+- 3. Student modelini yaz. [Tamamlandi]
+- 4. Create student validation yaz. [Tamamlandi]
+- 5. Create student service yaz. [Tamamlandi]
+- 6. Create student controller yaz. [Tamamlandi]
+- 7. Create student route yaz. [Tamamlandi]
+- 8. Student route'unu `app.ts` icine bagla. [Tamamlandi]
+- 9. MongoDB baglantisini kur ve create endpoint'ini test et. [Tamamlandi]
+- 10. Get all students service/controller/route. [Tamamlandi]
+- 11. Get student by id service/controller/route. [Tamamlandi]
+- 12. Update student validation + service/controller/route. [Tamamlandi]
+- 13. Delete student service/controller/route. [Tamamlandi]
+- 14. Student route'larina auth middleware ekle. [Tamamlandi]
+- 15. Gerekli route'lara role middleware ekle. [Tamamlandi]
+- 16. Test akislarini tekrar kontrol et. [Tamamlandi]
 
 ### Gun 4 - Redis Cache
 
@@ -123,6 +336,10 @@
 ## Mentor Notlari
 
 - Bir sonraki adim:
-  - Katmanli mimari klasorlerini ac (`controllers`, `services`, `models`, `routes`, `middlewares`, `validation`, `utils`, `interfaces`, `constants`).
+  - `.env` icinde `JWT_SECRET` tanimla.
+  - Auth akislarini Postman/Thunder Client ile test et.
+  - Day 3 icin Student domain planlamasina basla.
 - Tekrar etmem gereken konu:
+  - `Schema`, `Document`, `timestamps`, `default`, `Date`, `interface`, `required`, `unique`, `bcrypt`, `compare`, `endpoint`, `z.infer`, `auth`, `authorization`, `401`, `403`
 - Mini odev:
+  - Kendi cumlelerinle su soruyu cevapla: `password` neden modelde var ama neden duz metin tutulmuyor?

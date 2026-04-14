@@ -4,6 +4,8 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import authRoutes from "./user/routes/auth.routes";
+import studentRoutes from "./modules/student/routes/student.routes";
 
 const app = express();
 //health route ekle,json formatında {status: 'ok'} döndürsün
@@ -21,5 +23,7 @@ app.use(helmet());
 app.use(express.json());
 app.use(morgan("dev"));
 app.use(limiter);
+app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/students", studentRoutes);
 
 export default app;
