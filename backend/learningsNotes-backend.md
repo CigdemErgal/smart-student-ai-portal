@@ -297,10 +297,66 @@
 ### Gun 4 - Redis Cache
 
 - Bugun ne yaptim:
+  - Redis'in bu projede neden kullanilacagini netlestirdim.
+  - Cache'in ilk asamada hangi endpoint icin uygun olabilecegini planladim.
+  - Veri tutarliligi acisindan cache invalidation mantigini giris seviyesinde not ettim.
 - Neyi cacheledim:
+  - Bu asamada henuz uygulama seviyesinde bir veri cachelemedim.
+  - Ilk aday olarak `GET /api/v1/students` endpoint'inin uygun oldugunu belirledim.
 - Neden cacheledim:
+  - Redis, sik erisilen veriyi memory'de tutarak daha hizli cevap uretmeye yardim eder.
+  - Bu projede ilk amac, ayni veriler icin MongoDB'ye gereksiz tekrar sorgu gitmesini azaltmaktir.
+  - Listeleme endpoint'leri genelde okuma agirlikli oldugu icin cache'e iyi bir baslangic ornegidir.
 - Karsilastigim hata:
+  - Bu asamada teknik bir hata ile karsilasmadim.
+  - Ama cache kullanirken eski veri donme riskinin asil sorunlardan biri oldugunu fark ettim.
 - Cozum:
+  - Daha kod yazmadan once cache'in amacini ve ilk kullanilacak yeri netlestirdim.
+  - Create, update ve delete islemlerinden sonra cache temizlenmezse stale data donulebilecegini not ettim.
+  - Bu nedenle cache eklerken sadece hiz degil, veri tutarliligini da dusunmem gerektigini ogrendim.
+
+#### Gun 4 Kavram Notlari
+
+- Redis nedir
+  - Redis, veriyi gecici olarak memory'de tutan cok hizli bir veri yapisidir.
+  - Basit dusunursek: MongoDB buyuk bir arsiv dolabiysa, Redis masanin ustundeki hizli not kagididir.
+  - Siklikla gereken bilgiye her seferinde dolaptan bakmak yerine, once masadaki nottan bakariz.
+- Cache nedir
+  - Cache, sik kullanilan verinin gecici olarak hizli bir yerde tutulmasidir.
+  - Gercek hayat ornegi: Ogretmen yoklama listesini her ders mudur odasindan almiyorsa, masasinin ustunde tutuyorsa bu cache mantigina benzer.
+  - Ama liste degisirse ve eski kagit masada kalirsa yanlis bilgi kullanilmis olur.
+- Neden cache kullaniriz
+  - Cunku bazi veriler cok sik okunur ama her seferinde yeniden hesaplanmasi veya veritabanindan cekilmesi gereksiz maliyet olusturur.
+  - Cache kullaninca cevap daha hizli gelir ve veritabani daha az yorulur.
+  - Gercek hayat ornegi: Kantindeki fiyat listesini herkes her seferinde depodan sormaz; duvara bir liste asilidir ve hizli bakilir.
+- Bu projede Redis ne ise yarayacak
+  - Bu projede Redis'i ilk asamada tekrar tekrar istenen verileri hizli donmek icin dusunuyoruz.
+  - Ilk uygun yer `GET /api/v1/students` gibi listeleme endpoint'idir.
+  - Cunku ayni ogrenci listesi kisa sure icinde birden fazla kez istenebilir.
+- Cache hit nedir
+  - Aranan veri Redis'in icinde varsa buna `cache hit` denir.
+  - Yani sistem "Bu bilgi bende hazir var" der ve hizli cevap verir.
+  - Gercek hayat ornegi: Defterde cevap zaten yaziliysa yeniden arastirma yapmazsin.
+- Cache miss nedir
+  - Aranan veri Redis'te yoksa buna `cache miss` denir.
+  - Bu durumda sistem veriyi MongoDB'den alir, cevabi doner ve isterse Redis'e de kaydeder.
+  - Gercek hayat ornegi: Masanda not yoksa gidip arsiv dolabindan dosyayi getirirsin.
+- Neden her seyi cache'lemiyoruz
+  - Cunku her veri cache icin uygun degildir.
+  - Cok sik degisen verilerde cache eski bilgi tutabilir.
+  - Bu yuzden genelde once okuma agirlikli ve tekrarli endpoint'lerde baslanir.
+- Stale data nedir
+  - `Stale data`, eski kalmis veri demektir.
+  - Ornegin bir ogrenci guncellendi ama Redis'teki eski liste silinmediysa, kullanici guncel olmayan veri gorebilir.
+  - Gercek hayat ornegi: Panodaki sinif listesi degisti ama eski kagit hala asili kaldi.
+- Cache invalidation nedir
+  - `Cache invalidation`, eski cache verisini temizleme veya gecersiz hale getirme islemidir.
+  - Create, update, delete sonrasi bunu dusunmemiz gerekir.
+  - Basit mantik: Bilgi degistiyse, eski hizli notu cope atip yenisini hazirlariz.
+- Bu konudan ogrenmem gereken en temel fikir
+  - Redis'in amaci dogrulugu degistirmek degil, dogru veriyi daha hizli ulasabilir hale getirmektir.
+  - Ama hiz kazanirken veri tutarliligini kaybetmemek gerekir.
+  - Yani hiz ve dogruluk birlikte dusunulmelidir.
 
 ### Gun 5 - AI Chatbot ve Entegrasyon
 
