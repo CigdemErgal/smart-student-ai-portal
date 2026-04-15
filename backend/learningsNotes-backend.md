@@ -300,20 +300,38 @@
   - Redis'in bu projede neden kullanilacagini netlestirdim.
   - Cache'in ilk asamada hangi endpoint icin uygun olabilecegini planladim.
   - Veri tutarliligi acisindan cache invalidation mantigini giris seviyesinde not ettim.
+  - `backend/src/config/redis.ts` dosyasini olusturup temel Redis baglanti iskeletini yazdim.
+  - `server.ts` icinde `connectRedis()` cagrisi ekleyerek uygulama acilis akisina Redis baglantisini dahil ettim.
+  - Redis'in lokal calismasi icin proje kok dizininde `docker-compose.yml` dosyasi olusturdum.
+  - Docker Desktop acildiktan sonra `docker compose up -d` ile Redis container'ini basariyla baslattim.
 - Neyi cacheledim:
   - Bu asamada henuz uygulama seviyesinde bir veri cachelemedim.
   - Ilk aday olarak `GET /api/v1/students` endpoint'inin uygun oldugunu belirledim.
+  - `GET /api/v1/students` icin `students:all` key'i ile ogrenci listesini cachelemeye basladim.
 - Neden cacheledim:
   - Redis, sik erisilen veriyi memory'de tutarak daha hizli cevap uretmeye yardim eder.
   - Bu projede ilk amac, ayni veriler icin MongoDB'ye gereksiz tekrar sorgu gitmesini azaltmaktir.
   - Listeleme endpoint'leri genelde okuma agirlikli oldugu icin cache'e iyi bir baslangic ornegidir.
+  - Ilk basarili istekte veri MongoDB'den alip Redis'e yazildi, sonraki isteklerde ayni veri Redis'ten daha hizli dondu.
 - Karsilastigim hata:
-  - Bu asamada teknik bir hata ile karsilasmadim.
-  - Ama cache kullanirken eski veri donme riskinin asil sorunlardan biri oldugunu fark ettim.
+  - Ilk Redis baglanti denemesinde `ECONNREFUSED` hatasi aldim.
+  - MongoDB baglandi ama Redis baglantisi `127.0.0.1:6379` ve `::1:6379` uzerinden reddedildi.
+  - Bu hata kodun yazimindan cok, Redis servisinin calismadigini veya erisilebilir olmadigini gosterdi.
+  - `GET /api/v1/students` testinde once `401 No token provided`, sonra `Invalid or expired token` hatalari aldim.
+  - Bir noktada `EADDRINUSE` hatasi aldim, cunku backend'i ayni portta ikinci kez calistirmaya calistim.
 - Cozum:
   - Daha kod yazmadan once cache'in amacini ve ilk kullanilacak yeri netlestirdim.
   - Create, update ve delete islemlerinden sonra cache temizlenmezse stale data donulebilecegini not ettim.
   - Bu nedenle cache eklerken sadece hiz degil, veri tutarliligini da dusunmem gerektigini ogrendim.
+  - Redis istemcisinin dogru yazilmasinin tek basina yetmedigini, Redis server tarafinin da acik olmasi gerektigini ogrendim.
+  - Sonraki adimda Redis'i lokal veya Docker uzerinden calistirip tekrar test etmem gerektigini not ettim.
+  - Docker Desktop kapaliyken `docker compose` komutunun calismadigini, once Docker engine'in acik olmasi gerektigini ogrendim.
+  - Docker acildiktan sonra Redis image'i cekildi ve `smartstudent-redis` container'i basariyla ayaga kalkti.
+  - Korumali route'lari test etmek icin once `register`, sonra `login` yapip token almam gerektigini tekrar ettim.
+  - `GET /api/v1/students` icin ilk testlerde sadece `cache hit` gordum; gercek `cache miss` davranisini gormek icin Redis'teki `students:all` key'ini sildim.
+  - `docker exec smartstudent-redis redis-cli DEL students:all` komutundan sonra ilk istekte `cache miss`, ikinci istekte `cache hit` davranisini net olarak gordum.
+  - `createStudent` sonrasina cache invalidation ekledikten sonra, basarili `POST /api/v1/students` sonrasindaki ilk `GET /api/v1/students` isteginde yeniden `cache miss` gordum.
+  - Bir sonraki `GET /api/v1/students` isteginde tekrar `cache hit` gordum ve invalidation mantiginin calistigini dogruladim.
 
 #### Gun 4 Kavram Notlari
 
@@ -353,6 +371,108 @@
   - `Cache invalidation`, eski cache verisini temizleme veya gecersiz hale getirme islemidir.
   - Create, update, delete sonrasi bunu dusunmemiz gerekir.
   - Basit mantik: Bilgi degistiyse, eski hizli notu cope atip yenisini hazirlariz.
+- `students:all` neyi temsil ediyor
+  - Bu, Redis'te tum ogrenci listesini tuttugumuz key adidir.
+  - Kisa ve acik bir etiket gibidir.
+  - Gercek hayat ornegi: Dosya dolabindaki "Tum Ogrenciler" yazili klasor etiketi gibi dusunulebilir.
+- `cache miss` ne zaman gordum
+  - Redis'te `students:all` olmadiginda ilk istek `cache miss` oldu.
+  - Bu durumda sistem veriyi MongoDB'den aldi ve sonra Redis'e yazdi.
+  - Yani `miss`, "hazir kopya yok, gidip asil kaynaktan al" demektir.
+- `cache hit` ne zaman gordum
+  - `students:all` Redis'te oldugunda sonraki isteklerde `cache hit` gordum.
+  - Bu durumda veri tekrar MongoDB'den alinmadi, Redis'ten hizli sekilde dondu.
+  - Yani `hit`, "hazir kopya var, onu kullan" demektir.
+- Neden sadece `cache hit` gordum
+  - Cunku key daha once Redis'e yazilmisti.
+  - Bu nedenle sonraki istekler direkt Redis'ten cevaplandi.
+  - Gercek `miss` davranisini gormek icin key'i silmek gerekti.
+- Redis key silme neden onemli
+  - Bazen testte sifirdan baslamak icin cache'i temizlemek gerekir.
+  - Bunun icin `DEL students:all` kullanildi.
+  - Boylece sistemin once `miss`, sonra `hit` davranisi izlenebildi.
+- Neden `create`, `update`, `delete` sonrasi cache temizlemeliyiz
+  - Cunku bu islemler ogrenci listesini degistirir.
+  - Liste degisince eski `students:all` cache'i yanlis bilgi tasiyabilir.
+  - Bu yuzden veri degistiren islemlerden sonra o key silinmelidir.
+- Invalidation testinde neyi kanitladim
+  - Basarili bir `createStudent` isleminden sonra eski liste cache'i silindi.
+  - Sonraki ilk `GET /api/v1/students` istegi Redis'te veri bulamadi ve `cache miss` oldu.
+  - Bundan sonraki `GET /api/v1/students` istegi ise yeniden cache'e yazilan veriyi kullandi ve `cache hit` oldu.
+- Cache silme hangi katmanda olmali
+  - En mantikli yer yine `service` katmanidir.
+  - Cunku veri degisimi ve is kurallari service katmaninda yonetilir.
+  - Controller'in gorevi request/response yonetmektir; cache temizleme karari business flow'a daha yakindir.
+- `async` fonksiyon ne ise yarar
+  - `async`, icinde zaman alan bir is yapilacaksa kullanilir.
+  - Veritabani veya Redis baglantisi anlik olmaz; biraz bekleme olabilir.
+  - Bu fonksiyon sayesinde JavaScript "baglanti tamamlanana kadar bekle, sonra devam et" mantigiyla calisir.
+  - Gercek hayat ornegi: Bir arkadasini disaridan cagirirsin ve gelmesini beklersin; gelmeden derse baslamazsin.
+- `await` neden kullanilir
+  - `await`, sadece `async` fonksiyon icinde kullanilir.
+  - "Bu is bitsin, sonra alt satira gec" demektir.
+  - `await redisClient.connect()` yazinca, Redis baglantisi tamamlanmadan basarili kabul etmeyiz.
+- `process.exit(1)` nedir
+  - `process.exit(1)`, Node.js uygulamasini hata ile durdurur.
+  - Buradaki `1`, programin normal degil hatali sekilde kapandigini anlatir.
+  - Redis veya MongoDB baglanamiyorsa uygulamanin yari calisir halde acik kalmasindansa kontrollu sekilde durmasi daha iyidir.
+  - Gercek hayat ornegi: Okulun elektrik sistemi calismiyorsa derse devam ediyor gibi yapmak yerine okulu gecici olarak kapatmak daha dogrudur.
+- `ECONNREFUSED` ne demek
+  - Bu hata "o adreste bir kapiyi calmaya calistim ama kimse acmadi" gibi dusunulebilir.
+  - Uygulama `127.0.0.1:6379` adresindeki Redis'e baglanmak istedi ama o adreste calisan bir Redis server bulamadi.
+  - Gercek hayat ornegi: Dogru apartman numarasina gittin ama dairede kimse yok veya dukkan kapali.
+- `127.0.0.1:6379` ne demek
+  - `127.0.0.1`, bu bilgisayarin kendisini ifade eder. Buna bazen `localhost` da denir.
+  - `6379`, Redis'in varsayilan portudur.
+  - Yani uygulama aslinda "Ben bu bilgisayarda calisan Redis'e baglanmak istiyorum" dedi.
+- `docker compose up -d` ne yapar
+  - `docker compose up`, `docker-compose.yml` icindeki servisleri calistirir.
+  - `-d`, bunu arka planda yapar; yani terminali kilitlemeden servis ayakta kalir.
+  - Bu projede bu komut Redis server'ini lokal ortamda ayaga kaldirmak icin kullanildi.
+- `version is obsolete` uyarisinin anlami
+  - Bu bir durdurucu hata degil, sadece eski stil bir alan kullandigimizi soyler.
+  - Docker yeni surumlerde `version` satiri olmadan da compose dosyasini okuyabilir.
+  - Yani su an Redis'in calismasini engelleyen sey bu degildi.
+- `401 No token provided` ne demek
+  - Route var ama kullanicinin kimlik bilgisi gonderilmemis demektir.
+  - Yani daha service katmanina bile gecilmeden istek reddedilir.
+  - Bu durumda ne DB ne Redis cache mantigi calisir.
+- `Invalid or expired token` ne demek
+  - Token gonderildi ama backend onu dogrulayamadı demektir.
+  - Token eksik kopyalanmis, bozulmus veya gecersiz olabilir.
+  - Dogru test icin login response'undaki token degeri eksiksiz kullanilmalidir.
+- `EADDRINUSE` ne demek
+  - Ayni portta zaten calisan bir uygulama varken ikinci kez server baslatilmaya calisildiginda olur.
+  - Bu projede `5000` portu zaten kullanildigi icin ikinci backend acilisi hata verdi.
+  - Basit mantik: Ayni kapiyi iki farkli server ayni anda kullanamaz.
+
+#### Gun 4 Mikro Yol Haritasi
+
+- 1. Redis'in projedeki rolunu netlestir. [Tamamlandi]
+- 2. Redis baglanti dosyasinin yerini planla. [Tamamlandi]
+- 3. `src/config/redis.ts` dosyasini olustur. [Tamamlandi]
+- 4. `server.ts` icinde Redis baglantisini startup akisina ekle. [Tamamlandi]
+- 5. Redis'i Docker ile lokal ortamda ayaga kaldir. [Tamamlandi]
+- 6. Ilk cache adayi endpoint olarak `GET /api/v1/students` sec. [Tamamlandi]
+- 7. `getAllStudents` service icine cache hit / miss mantigi ekle. [Tamamlandi]
+- 8. `students:all` key'i ile ilk liste cache'ini yaz. [Tamamlandi]
+- 9. Token ile korumali route testini gec ve endpoint'i calistir. [Tamamlandi]
+- 10. `cache miss` ve `cache hit` davranisini gercek istekte gozlemle. [Tamamlandi]
+- 11. `create`, `update`, `delete` sonrasi cache invalidation mantigini planla. [Tamamlandi]
+- 12. `createStudent` sonrasinda `students:all` key silmeyi ekle. [Tamamlandi]
+- 13. `updateStudent` sonrasinda `students:all` key silmeyi ekle. [Tamamlandi]
+- 14. `deleteStudent` sonrasinda `students:all` key silmeyi ekle. [Tamamlandi]
+- 15. Invalidation sonrasi test akislarini tekrar calistir. [Tamamlandi]
+
+#### Gun 4 Mentor Ozeti
+
+- Redis'i bu projede ana veri kaynagi olarak degil, hizlandirici cache katmani olarak kullandim.
+- MongoDB asil kaynak olarak kaldi; Redis ise sik istenen liste verisini gecici olarak tuttu.
+- `GET /api/v1/students` icin `students:all` key'i ile ilk cache akisini kurdum.
+- Ilk istekte `cache miss`, sonraki istekte `cache hit` davranisini gercek olarak gozlemledim.
+- `create`, `update` ve `delete` sonrasi stale data olusmamasi icin `students:all` key'ini service katmaninda temizledim.
+- Basarili `createStudent` sonrasi yeniden `cache miss` gorerek invalidation mantiginin dogru calistigini dogruladim.
+- Bu gunden ogrenilen en kritik fikir: Redis hiz kazandirir, ama veri tutarliligi korunmazsa yanlis veri dondurebilir. Bu nedenle cache her zaman invalidation mantigi ile birlikte dusunulmelidir.
 - Bu konudan ogrenmem gereken en temel fikir
   - Redis'in amaci dogrulugu degistirmek degil, dogru veriyi daha hizli ulasabilir hale getirmektir.
   - Ama hiz kazanirken veri tutarliligini kaybetmemek gerekir.

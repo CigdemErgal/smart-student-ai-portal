@@ -3,6 +3,7 @@ import {
   CreateStudentInput,
   UpdateStudentInput,
 } from "../validations/student.validation";
+import redisClient from "../../../config/redis";
 
 export const createStudent = async (data: CreateStudentInput) => {
   const existingStudent = await Student.findOne({
@@ -24,12 +25,21 @@ export const createStudent = async (data: CreateStudentInput) => {
     userId: data.userId,
     isActive: data.isActive ?? true,
   });
+  await redisClient.del("students:all");
 
   return newStudent;
 };
 
 export const getAllStudents = async () => {
+  const cacheKey = "students:all";
+  const cachedStudents = await redisClient.get(cacheKey);
+  if (cachedStudents) {
+    console.log("Cache hit: students list");
+    return JSON.parse(cachedStudents);
+  }
+  console.log("Cache miss: students list");
   const students = await Student.find();
+  await redisClient.set(cacheKey, JSON.stringify(students));
   return students;
 };
 
@@ -49,6 +59,7 @@ export const updateStudent = async (id: string, data: UpdateStudentInput) => {
     throw new Error("Student not found");
   }
 
+  await redisClient.del("students:all");
   return updatedStudent;
 };
 
@@ -57,5 +68,6 @@ export const deleteStudent = async (id: string) => {
   if (!deletedStudent) {
     throw new Error("Student not found");
   }
+  await redisClient.del("students:all");
   return deletedStudent;
 };
