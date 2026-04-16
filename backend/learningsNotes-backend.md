@@ -746,6 +746,22 @@
 - Bu asamada en onemli gelisim: status code'lari ezberlemek degil, her birinin sistemde hangi katmani anlattigini hissetmeye baslamam oldu.
 - Prompt degisikligi yaptigimda bile once servis erisilebilirligini, sonra cevap kalitesini degerlendirmem gerektigini ogrendim.
 
+####Day 6 Özeti
+
+Day 6’da yeni büyük bir özellik eklemekten çok, mevcut chatbot yapısını daha güvenli ve daha profesyonel hale getirdin. En önemli adım, chatbot endpoint’ini anonim erişime kapatıp sadece giriş yapmış kullanıcıya açman oldu. Böylece AI gibi maliyetli bir endpoint’te authentication’ın neden önemli olduğunu gerçek bir örnekle öğrendin.
+
+Bugün öğrendiğin en değerli şeylerden biri status code düşüncesiydi. 401 ile auth katmanının çalıştığını, 503 ile dış AI servisinin geçici olarak unavailable olabileceğini, yani her hatanın senin kodundan kaynaklanmadığını gördün. Ayrıca prompt guidance ekleyerek modele daha kısa, daha açık ve öğrenci dostu cevap verme yönlendirmesi verdin. Bu da sana şu backend refleksini kazandırdı: önce sistem erişilebilir mi, sonra cevap geliyor mu, en son cevap kalitesi nasıl diye düşünmek gerekir.
+
+Bugünün ana kazanımları:
+
+chatbot route artık auth ile korunuyor
+tokensiz istek 401 dönüyor
+dış servis 503 hatası daha doğru sınıflanıyor
+prompt hardening için temel instruction eklendi
+learning notes öğretici şekilde güncellendi
+değişiklikler Git’e hazırlandı / kaydedildi
+Bu noktada Day 6 da sağlam bir checkpoint’e gelmiş durumda.
+
 ### Gun 7 - Final Touch ve Sunum
 
 - Bugun ne yaptim:
