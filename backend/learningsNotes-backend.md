@@ -646,11 +646,14 @@
   - Tokensiz istek attigimda `401 Unauthorized` aldigimi test ederek auth korumasinin calistigini dogruladim.
   - Tokenli istekte endpoint'in route'a girdigini ama bu kez dis servis tarafindan gelen bir hata nedeniyle basarisiz oldugunu gozlemledim.
   - Controller icinde dis AI servisten gelen `503` hatasini ayirarak daha dogru bir HTTP cevabi donmeyi ogrendim.
+  - `chatbot.service.ts` icine cok sade bir instruction ekleyerek modele daha kisa, daha acik ve ogrenci dostu cevap vermesi icin yonlendirme verdim.
+  - Bu prompt hardening adimini test etmek istedigimde dis servis yeniden `503` dondurdu ve bu durumda prompt kalitesini degil once servis erisilebilirligini dusunmem gerektigini ogrendim.
 - Guvenlik iyilestirmeleri:
   - Chatbot gibi maliyetli bir endpoint'i anonim kullanima kapattim.
   - Boylece hem gereksiz maliyet hem de abuse riski icin ilk guvenlik kapisini eklemis oldum.
   - `authMiddleware` ile "kullanici login oldu mu?" kontrolu route seviyesinde yapildi.
   - Role bazli ayrim simdilik eklenmedi; once login olmus kullanicilarin erisebilmesi saglandi.
+  - Prompt tarafinda modele kisalik, aciklik ve ogrenci dostu ton icin sinir vererek daha kontrollu cevap uretimi hedeflendi.
 - Performans iyilestirmeleri:
   - Bu gunde dogrudan performans artiran yeni bir cache mekanizmasi eklenmedi.
   - Ama hata siniflandirmasi iyilestigi icin sistem davranisini anlamak ve debug etmek daha hizli hale geldi.
@@ -658,11 +661,13 @@
   - Tokensiz istekte bekledigim gibi `401` aldim.
   - Tokenli istekte ise `500` aldim ve ilk bakista bunun auth problemi mi, backend problemi mi yoksa AI servisi problemi mi oldugunu ayirt etmek gerekiyordu.
   - Terminal logunda dis AI servisinden gelen `status: 503` bilgisini gordum.
+  - Prompt iyilestirmesi sonrasi yeni cevabi degerlendirmek isterken yine `503` aldim; yani bu sefer sorun prompt metninde degil, cevap uretilmeden once dis servisin gecici olarak erisilemez olmasiydi.
 - Cozum:
   - `401` ile `500` farkina bakarak once auth katmaninin dogru calistigini anladim.
   - Hatanin middleware'de degil, controller/service sonrasi asamada oldugunu fark ettim.
   - Controller icinde `503` durumunu ayri yakalayip kullaniciya `AI service is temporarily unavailable` mesaji donmeye basladim.
   - Boylece kendi backend hatam ile dis servis gecici hatasini ayni kategoriye koymamis oldum.
+  - Prompt degisikligini degerlendirirken once "kod calisti mi?" sonra "dis servis cevap verdi mi?" sonra "cevap kalitesi nasil?" sirasi ile dusunmem gerektigini fark ettim.
 
 #### Gun 6 Gelisim Notlari
 
@@ -699,6 +704,24 @@
   - Bu hem frontend icin daha dogru bilgi verir hem de backend debug surecini kolaylastirir.
   - Ileride `429`, `401`, `403`, `400`, `500`, `503` gibi kodlari daha bilincli kullanmam icin temel olusturur.
 
+- Prompt hardening neden onemlidir
+  - Modeli tamamen kontrol etmez ama cevaplar icin bir cerceve verir.
+  - "Kisa ol", "acik ol", "Turkce cevap ver", "ogrenci dostu ol" gibi yonlendirmeler davranisi daha tutarli hale getirebilir.
+  - Bu, ozellikle egitim odakli projelerde daha sade ve amaca uygun cevaplar almak icin faydalidir.
+
+- Prompt degisikligini test ederken nasil dusunmeliyim
+  - Eger dis servis hic cevap veremiyorsa once prompt'un iyi mi kotu mu oldugunu tartismak dogru olmaz.
+  - Once servis ayakta mi, cevap uretti mi, sonra cevap kalitesi iyi mi diye bakmak gerekir.
+  - Yani test sirasi su olmalidir:
+  - 1. Endpoint calisti mi
+  - 2. Dis servis cevap verdi mi
+  - 3. Cevap kalitesi istedigim yone gitti mi
+
+- `503` geldiginde neyi anlamaliyim
+  - Bu her zaman "kodum bozuk" demek degildir.
+  - Bazen sadece o anda AI servisi yogun olabilir veya gecici problem yasiyor olabilir.
+  - Boyle durumlarda dogru gelistirici refleksi, kodu panikle bozmak degil once hatanin kaynagini ayirt etmektir.
+
 - Bu adimdan ogrendigim buyuk backend dersi
   - Her hata ayni degildir.
   - Hata yonetimi sadece `try/catch` yazmak degil, hatayi dogru siniflandirmak demektir.
@@ -711,6 +734,8 @@
 - 3. Tokensiz istekte `401` davranisini test et. [Tamamlandi]
 - 4. Tokenli istekte route sonrasi davranisi test et. [Tamamlandi]
 - 5. Dis servis kaynakli `503` hatasini ayri yakalayip dogru status code don. [Tamamlandi]
+- 6. Service katmanina sade bir egitsel instruction ekle. [Tamamlandi]
+- 7. Prompt hardening testinde `503` durumunu dogru yorumla. [Tamamlandi]
 
 #### Gun 6 Mentor Ozeti
 
@@ -719,6 +744,7 @@
 - `401` ve `500` farkini sadece teoride degil, gercek testte de gormus oldum.
 - Dis AI servisinden gelen `503` hatasini ayri ele almak, benim backend'imin hatasi ile upstream servis hatasini ayirt etmemi sagladi.
 - Bu asamada en onemli gelisim: status code'lari ezberlemek degil, her birinin sistemde hangi katmani anlattigini hissetmeye baslamam oldu.
+- Prompt degisikligi yaptigimda bile once servis erisilebilirligini, sonra cevap kalitesini degerlendirmem gerektigini ogrendim.
 
 ### Gun 7 - Final Touch ve Sunum
 

@@ -16,7 +16,7 @@ export const sendMessageToChatbot = async (
 
   const response = await ai.models.generateContent({
     model: "gemini-2.5-flash",
-    contents: message,
+    contents: `You are a helpful educational assistant. Give short, clear, student-friendly answers in Turkish.\n\nUser message: ${message}`,
   });
 
   return response.text ?? "No reply generated";
