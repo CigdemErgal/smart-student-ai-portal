@@ -481,10 +481,161 @@
 ### Gun 5 - AI Chatbot ve Entegrasyon
 
 - Bugun ne yaptim:
+  - Day 5 icin AI chatbot'un ilk kullanim senaryosunu netlestirdim.
+  - Chatbot'un ilk asamada ogrenci ve ogretmenlerin kullanacagi sade bir metin tabanli yardimci olmasina karar verdim.
+  - Baslangic saglayicisi olarak Gemini'nin ucretsiz surumunu kullanma kararini netlestirdim.
+  - Ilk versiyonda kapsami bilerek dar tuttum: `text input -> text output`.
+  - Ilk request alanini `message`, ilk response alanini `reply` olarak dusundum.
+  - `src/modules/chatbot` altinda `controllers`, `services`, `routes`, `validations` klasor yapisini olusturdum.
+  - `chatbot.validation.ts` icinde `message` alani icin ilk Zod schema'sini yazdim.
+  - `chatbot.service.ts` icinde ilk placeholder AI cevap mantigini kurdum.
+  - `chatbot.controller.ts` icinde validation -> service -> response akisini kurdum.
+  - `chatbot.routes.ts` icinde `POST /` route'unu tanimladim.
+  - `app.ts` icine chatbot route'unu `/api/v1/chatbot` altinda bagladim.
+  - `POST /api/v1/chatbot` endpoint'ini placeholder cevap ile test ettim ve `200 OK` aldim.
+  - Bos `message` ile test yapip once `500`, sonra `ZodError` ayrimi ekleyerek `400 Bad Request` davranisini duzelttim.
+  - `backend/.env` icine `GEMINI_API_KEY` degiskenini ekledim.
+  - Service katmaninda `process.env.GEMINI_API_KEY` kontrolunu ekledim.
+  - `@google/genai` paketini backend tarafina kurdum.
+  - `chatbot.service.ts` icinde placeholder cevap yerine gercek Gemini API cagrisi ekledim.
+  - `gemini-2.5-flash` modeli ile ilk canli chatbot istegini basariyla calistirdim.
+  - `POST /api/v1/chatbot` endpoint'inden gercek AI cevabi alarak `200 OK` sonucunu dogruladim.
+  - `chatbot.routes.ts` icinde chatbot endpoint'i icin ozel rate limit ekledim.
 - API entegrasyon notlari:
+  - Ilk versiyonda backend, kullanicidan gelen tek bir metin mesaji alip AI saglayicisina gonderecek ve tek bir metin cevap dondurecek.
+  - Chatbot'un ilk akisi `Controller -> Service -> Route` yapisini bozmayacak sekilde planlanacak.
+  - Ilk versiyonda cok turlu konusma, sohbet gecmisi ve veritabani kaydi olmayacak.
+  - Ilk asamada sadece temel prompt gonderme ve cevap alma mantigi ogrenilecek.
+  - `POST /api/v1/chatbot` icin ilk API sozlesmesi sade tutuldu: request body icinde sadece `message`, response body icinde sadece `reply`.
+  - Ilk versiyonda gercek Gemini cagrisi yerine placeholder cevap kullanildi; boylece once kendi backend akisimi test ettim.
+  - Validation katmani controller'a gitmeden once body yapisini kontrol edecek sekilde planlandi.
+  - Gercek entegrasyon asamasinda resmi SDK olarak `@google/genai` kullanildi.
+  - Service katmaninda `GoogleGenAI` client'i olusturulup `generateContent` ile ilk canli cevap alindi.
+  - Ilk canli model secimi olarak `gemini-2.5-flash` kullanildi.
+  - Chatbot endpoint'i icin `15 dakika / 5 istek` siniri ile ayri bir route bazli limit tanimlandi.
 - Guvenlik notlari:
+  - API key dogrudan kod icine yazilmayacak; sadece `.env` uzerinden yonetilecek.
+  - Ilk versiyonda dosya yukleme, gorsel/ses/video isleme ve canli internet aramasi olmayacak.
+  - Not verme, resmi karar uretme, hassas yonlendirme veya kritik alanlarda kesin hukum verme chatbot'un gorevi olmayacak.
+  - Abuse riskini azaltmak icin chatbot route'u icin ayri rate limit ihtiyaci oldugu not edildi.
+  - Input validation ile bos, cok kisa veya asiri uzun mesajlarin kontrol edilmesi gerektigi not edildi.
+  - `GEMINI_API_KEY` frontend'e acilmayacak, response icinde donmeyecek ve log'lara yazdirilmayacak.
+  - Validation hatasi ile sunucu hatasinin ayni status code ile donulmemesi gerektigini ogrendim.
+  - Fatura riski ve abuse ihtimaline karsi sadece chatbot route'una ozel ek bir rate limit koydum.
 - Karsilastigim hata:
+  - Postman'de `ECONNREFUSED 127.0.0.1:5000` hatasi aldim.
+  - `npm run dev` sirasinda Redis baglantisinda `ECONNREFUSED 6379` hatasi aldim.
+  - `docker compose up -d` sirasinda Docker engine calismadigi icin Docker API baglanti hatasi aldim.
+  - Postman'de URL alanina `GET http://localhost:5000/health` yazarak `Invalid protocol: get http:` hatasi aldim.
+  - Bos `message` istegi validation hatasi olmasina ragmen ilk asamada `500` dondurdu.
+  - Ayni anda iki backend sureci acmaya calisinca `EADDRINUSE` hatasi aldim.
+  - Gercek Gemini testinden once aktif server sureci ile debug terminalini karistirdim.
 - Cozum:
+  - Sorunun chatbot route'unda degil, backend'in Redis baglantisinda durmasindan kaynaklandigini tespit ettim.
+  - Redis'i Docker Desktop uzerinden tekrar ayaga kaldirip backend'i yeniden baslattim.
+  - `/health` endpoint'i ile once server'in ayakta oldugunu dogruladim.
+  - Postman'de method ve URL alaninin farkli seyler oldugunu ogrendim; URL alanina sadece adres yazilmasi gerektigini gordum.
+  - Controller icinde `ZodError` ayrimi ekleyerek validation hatalarini `400`, diger hatalari `500` olarak ayirdim.
+  - `5000` portunu kullanan eski sureci bulup kapatarak tek aktif backend sureci ile debug yaptim.
+  - Once server'in ayakta oldugunu, sonra `/health` endpoint'inin calistigini, en son chatbot endpoint'ini test etmem gerektigini ogrendim.
+
+#### Gun 5 Ilk Kullanim Senaryosu
+
+- Bu chatbot kimler icin:
+  - Giris yapmis ogrenci ve ogretmen kullanicilar icin.
+- Ne yapacak:
+  - Kullanicidan gelen tek bir metin mesaji alacak.
+  - Bu mesaji Gemini API'ye gonderecek.
+  - Tek bir metin cevap dondurecek.
+- Ne yapmayacak:
+  - Sohbet gecmisi tutmayacak.
+  - Veritabanina mesaj kaydetmeyecek.
+  - Dosya yukleme kabul etmeyecek.
+  - Gorsel, ses veya video islemeyecek.
+  - Canli internet aramasi yapmayacak.
+  - Not verme, resmi karar verme veya hassas yonlendirme yapmayacak.
+- Ilk versiyon input:
+  - `message`
+- Ilk versiyon output:
+  - `reply`
+- Scope notu:
+  - Ilk versiyon bilerek kucuk tutuldu.
+  - Amac once guvenli ve sade bir backend akis kurmak.
+
+#### Gun 5 Kavram Notlari
+
+- `text input -> text output`
+  - Ilk versiyonda chatbot'a sadece metin gonderip sadece metin cevap aliyoruz.
+  - Bu, sistemi gereksiz yere karmasiklastirmadan temel AI akisina odaklanmamizi saglar.
+- `placeholder reply`
+  - Gercek AI cevabi yerine gecici sabit cevap donmektir.
+  - Boylece once route, controller, service ve validation zincirini test edebilirim.
+- API sozlesmesi nedir
+  - Bir endpoint'in hangi veriyi alacagini ve hangi veriyi donecegini netlestiren kuraldir.
+  - Bu projede ilk chatbot sozlesmesi `message -> reply` seklinde tutuldu.
+- `400 Bad Request`
+  - Istek sunucuya ulasti ama kullanicinin gonderdigi veri kurallara uymadi demektir.
+  - Bos `message` buna ornektir.
+- `500 Internal Server Error`
+  - Sunucunun icinde beklenmeyen bir hata oldugunu anlatir.
+  - Gercek backend hatalari bu gruba girer.
+- `ZodError`
+  - Zod validation basarisiz oldugunda olusan hata turudur.
+  - Bu hata ayri yakalanirsa validation ile sistem hatasi birbirinden ayrilabilir.
+- `process.env`
+  - Node.js uygulamasinda ortam degiskenlerine erismek icin kullanilir.
+  - `GEMINI_API_KEY` gibi hassas bilgileri kod disindan okumami saglar.
+- `@google/genai`
+  - Gemini API icin resmi Node.js SDK'sidir.
+  - HTTP detaylarini elle yazmadan daha temiz entegrasyon kurmami saglar.
+- `GoogleGenAI`
+  - SDK icinde Gemini client olusturmak icin kullanilan siniftir.
+  - API key ile birlikte olusturulup model cagrilarini bunun uzerinden yaparim.
+- `generateContent`
+  - Gemini'ye tek seferlik icerik gonderip cevap almak icin kullanilan temel metottur.
+  - Bu projede ilk versiyonun "tek mesaj -> tek cevap" mantigina uygundur.
+- Route bazli rate limit
+  - Tum uygulamaya konan global limitten ayridir; sadece belirli bir endpoint icin ek sinirlama yapar.
+  - Pahali veya limitli endpoint'lerde ekstra koruma saglamak icin faydalidir.
+- `ECONNREFUSED`
+  - Baglanmaya calistigim adreste dinleyen bir servis olmadigini gosterir.
+  - Bu hata bazen route probleminden degil, daha alttaki bir servis acik olmadigindan kaynaklanir.
+- `EADDRINUSE`
+  - Ayni portu ikinci kez kullanmaya calistigimda ortaya cikar.
+  - Genelde baska bir surec ayni portta zaten calisiyordur.
+
+#### Gun 5 Mikro Yol Haritasi
+
+- 1. AI chatbot'un ilk rolunu netlestir. [Tamamlandi]
+- 2. Baslangic saglayicisi olarak Gemini kararini netlestir. [Tamamlandi]
+- 3. Day 5 branch'ine gec ve dogrula. [Tamamlandi]
+- 4. `src/modules/chatbot` klasor yapisini olustur. [Tamamlandi]
+- 5. Ilk request/response yapisini `message -> reply` olarak tanimla. [Tamamlandi]
+- 6. `chatbot.validation.ts` icinde ilk validation schema'sini yaz. [Tamamlandi]
+- 7. `chatbot.service.ts` icinde ilk placeholder service mantigini kur. [Tamamlandi]
+- 8. `chatbot.controller.ts` icinde validation ve service akisini kur. [Tamamlandi]
+- 9. `chatbot.routes.ts` icinde `POST /` route'unu ekle. [Tamamlandi]
+- 10. `app.ts` icine `/api/v1/chatbot` route baglantisini ekle. [Tamamlandi]
+- 11. `POST /api/v1/chatbot` endpoint'ini basarili body ile test et. [Tamamlandi]
+- 12. Bos `message` ile validation davranisini test et. [Tamamlandi]
+- 13. Validation hatasini `400`, diger hatalari `500` olacak sekilde ayir. [Tamamlandi]
+- 14. `backend/.env` icine `GEMINI_API_KEY` ekle. [Tamamlandi]
+- 15. Service katmaninda `GEMINI_API_KEY` varlik kontrolu ekle. [Tamamlandi]
+- 16. `@google/genai` paketini kur. [Tamamlandi]
+- 17. Service katmaninda gercek Gemini cagrisi ekle. [Tamamlandi]
+- 18. Canli `POST /api/v1/chatbot` istegi ile gercek AI cevabini dogrula. [Tamamlandi]
+- 19. Chatbot route'u icin ozel rate limit ekle. [Tamamlandi]
+
+#### Gun 5 Mentor Ozeti
+
+- Day 5'te gercek AI servisine kosmadan once temiz bir chatbot backend iskeleti kurdum.
+- En kritik karar, ilk versiyonu kucuk tutmak oldu: tek mesaj al, tek cevap don.
+- Katmanli mimari korunarak validation, service, controller ve route zinciri ayri ayri kuruldu.
+- Placeholder cevap kullanmak dogru bir ara adim oldu; boylece once kendi backend akisini test ettim.
+- En onemli API tasarim dersi: kullanici hatasi ile sunucu hatasi ayni sey degildir; bu nedenle `400` ve `500` farki pratikte uygulandi.
+- En onemli guvenlik dersi: API key kodda degil, sadece `.env` icinde tutulmali ve asla frontend'e acilmamalidir.
+- Day 5 sonunda sistem sadece teorik olarak degil, gercek Gemini entegrasyonu ile canli olarak da calisir hale geldi.
+- Day 5'in son guvenlik kati olarak chatbot endpoint'ine ozel rate limit eklenip fatura ve abuse riski azaltildi.
 
 ### Gun 6 - Test ve Hardening
 

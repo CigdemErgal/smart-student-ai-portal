@@ -6,9 +6,10 @@ import morgan from "morgan";
 import rateLimit from "express-rate-limit";
 import authRoutes from "./user/routes/auth.routes";
 import studentRoutes from "./modules/student/routes/student.routes";
+import chatbotRoutes from "./modules/chatbot/routes/chatbot.routes";
 
 const app = express();
-//health route ekle,json formatında {status: 'ok'} döndürsün
+
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
@@ -25,5 +26,5 @@ app.use(morgan("dev"));
 app.use(limiter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/students", studentRoutes);
-
+app.use("/api/v1/chatbot", chatbotRoutes);
 export default app;
