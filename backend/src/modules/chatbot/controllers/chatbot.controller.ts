@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { sendMessageToChatbot } from "../services/chatbot.service";
 import { chatbotMessageSchema } from "../validations/chatbot.validation";
 import { ZodError } from "zod";
+
 export const chatbotController = async (
   req: Request,
   res: Response,
@@ -24,6 +25,21 @@ export const chatbotController = async (
       });
       return;
     }
+    if (
+      typeof error === "object" &&
+      error !== null &&
+      "status" in error &&
+      error.status === 503
+    ) {
+      res.status(503).json({
+        success: false,
+        message:
+          "AI service is temporarily unavailable. Please try again later.",
+      });
+      return;
+    }
+
+    console.error("Chatbot controller error:", error);
 
     res.status(500).json({
       success: false,

@@ -1,6 +1,7 @@
 import { Router } from "express";
 import rateLimit from "express-rate-limit";
 import { chatbotController } from "../controllers/chatbot.controller";
+import { authMiddleware } from "../../../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -13,6 +14,6 @@ const chatbotLimiter = rateLimit({
   },
 });
 
-router.post("/", chatbotLimiter, chatbotController);
+router.post("/", authMiddleware, chatbotLimiter, chatbotController);
 
 export default router;
