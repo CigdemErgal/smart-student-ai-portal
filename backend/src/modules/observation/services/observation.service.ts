@@ -3,12 +3,15 @@ import {
   getObservationById,
   getObservationsByStudentId,
 } from "../repositories/observation.repository";
+import { getStudentById } from "../../student/services/student.service";
 import { CreateObservationInput } from "../types/observation.types";
 
 export const createObservationService = async (
   data: CreateObservationInput,
   user: { userId: string; role: string },
 ) => {
+  await getStudentById(data.studentId);
+
   return createObservation({
     ...data,
     recordedBy: user.userId,
@@ -17,9 +20,17 @@ export const createObservationService = async (
 };
 
 export const getStudentObservationsService = async (studentId: string) => {
+  await getStudentById(studentId);
+
   return getObservationsByStudentId(studentId);
 };
 
 export const getObservationByIdService = async (id: string) => {
-  return getObservationById(id);
+  const observation = await getObservationById(id);
+
+  if (!observation) {
+    throw new Error("Observation not found");
+  }
+
+  return observation;
 };
