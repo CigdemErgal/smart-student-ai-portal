@@ -7,6 +7,7 @@ import rateLimit from "express-rate-limit";
 import authRoutes from "./user/routes/auth.routes";
 import studentRoutes from "./modules/student/routes/student.routes";
 import chatbotRoutes from "./modules/chatbot/routes/chatbot.routes";
+import observationRoutes from "./modules/observation/routes/observation.routes";
 
 const app = express();
 
@@ -27,4 +28,5 @@ app.use(limiter);
 app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/students", studentRoutes);
 app.use("/api/v1/chatbot", chatbotRoutes);
+app.use("/api/v1/observations", observationRoutes);
 export default app;

@@ -64,7 +64,10 @@ export const getAllStudentsController = async (
 ) => {
   try {
     const students = await getAllStudents();
-    const safeStudents = students.map((student) => safeStudentResponse(student));
+    const safeStudents = students.map(
+      (student: Parameters<typeof safeStudentResponse>[0]) =>
+        safeStudentResponse(student),
+    );
 
     res.status(200).json({
       message: "Students fetched successfully",
