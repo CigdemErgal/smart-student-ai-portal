@@ -7,11 +7,11 @@ import { CreateObservationInput } from "../types/observation.types";
 
 export const createObservationService = async (
   data: CreateObservationInput,
-  user: { id: string; role: string },
+  user: { userId: string; role: string },
 ) => {
   return createObservation({
     ...data,
-    recordedBy: user.id,
+    recordedBy: user.userId,
     recordedByRole: user.role,
   });
 };
