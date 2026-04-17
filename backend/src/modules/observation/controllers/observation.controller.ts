@@ -12,7 +12,8 @@ export const createObservationController = async (
   res: Response,
 ) => {
   const validatedData = createObservationSchema.parse(req.body);
-  const observation = await createObservationService(validatedData);
+  const user = req.user as { id: string; role: string };
+  const observation = await createObservationService(validatedData, user);
 
   res.status(201).json({
     message: "Observation created successfully",

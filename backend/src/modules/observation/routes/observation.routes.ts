@@ -4,10 +4,12 @@ import {
   getObservationByIdController,
   getStudentObservationsController,
 } from "../controllers/observation.controller";
+import { authMiddleware } from "../../../middlewares/auth.middleware";
+
 const router = Router();
 
-router.post("/", createObservationController);
-router.get("/student/:id", getStudentObservationsController);
-router.get("/:id", getObservationByIdController);
+router.post("/", authMiddleware, createObservationController);
+router.get("/student/:id", authMiddleware, getStudentObservationsController);
+router.get("/:id", authMiddleware, getObservationByIdController);
 
 export default router;
