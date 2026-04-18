@@ -1,112 +1,162 @@
 # Observation Module Plan
 
-## 1. Amac
+## 1. Bu Dokuman Ne Icin Var
 
-Bu dokuman, SmartStudent projesinde yeni konumlandirilan okul ici ogrenci takip ve destek sistemi icin observation modulu kararlarini kaydetmek amaciyla hazirlandi.
+Bu dokuman, SmartStudent projesinde observation modulunu neden baslattigimizi, hangi teknik kararleri aldigimizi, uygulamada neleri yaptigimizi ve bugun hangi noktada oldugumuzu sade bir ders notu mantigiyla anlatmak icin hazirlandi.
 
-Bu dosya:
-- urun sinirlarini hatirlatir
-- observation modulu icin ilk teknik dusunceyi toplar
-- implementasyon sirasinda referans olur
+Bu dosyanin amaci:
 
-## 2. Yeni Urun Kimligi
+- urun yonunu unutmamak
+- observation modulunun sinirlarini net tutmak
+- implementasyon sirasini kaydetmek
+- tamamlanan isleri ve kalanlari karistirmadan gormek
+- sonraki modullere gecerken temiz bir referans birakmak
 
-SmartStudent, okul personelinin ogrencilerle ilgili akademik, davranissal ve rehberlik sureclerini duzenli, yetki kontrollu ve kayit altinda yonetmesini saglayan okul ici ogrenci takip ve destek sistemidir.
+## 2. Projenin Yeni Yonelimi
 
-### Birincil kullanicilar
+Proje artik ogrencilerin kullandigi bir portal degil.
 
-- admin
-- branch_teacher
-- homeroom_teacher
-- counselor
+Yeni urun kimligi:
 
-### Sistem disinda kalanlar
+- okul ici ogrenci takip ve destek sistemi
+- ana kullanim amaci: okul personelinin ogrencilerle ilgili surecleri duzenli ve yetki kontrollu sekilde takip etmesi
+
+Bu yeni yonelimle birlikte temel kabul:
 
 - ogrenciler sistem kullanicisi degildir
 - veliler sistem kullanicisi degildir
-- AI karar verici degildir
-- sistem tani veya otomatik ceza sistemi degildir
+- ogrenciler veri varligidir
+- sistem tani koymaz
+- sistem otomatik ceza mekanizmasi degildir
+- AI karar verici degil, yardimci ozetleyici roldedir
 
-## 3. Domain Siniri
+## 3. Backend ve Mimari Baglam
 
-### Cekirdek platform
+Projede observation modulu su teknik zemin uzerine kuruldu:
 
-- auth
-- users / roles
-- student-profile
-- school-structure
-- validation
-- cache
-- error handling
-- AI integration adapter
+- Node.js
+- Express
+- TypeScript
+- MongoDB Atlas
+- Redis
+- Docker
 
-### Hassas takip domaini
+Mimari yaklasim:
 
-- observation
-- timeline
-- counseling
-- red-flag
-- ai-summary
+- `Controller -> Service -> Model/Repository`
 
-Not:
-- `observation` ile `counseling` ayri domain mantiginda kalmalidir
-- `timeline` ilk MVP'de ayri veri modeli olmak zorunda degildir
+Bu mimaride:
 
-## 4. Rol Mantigi
+- controller request ve response ile ilgilenir
+- service is kurallarini yonetir
+- repository veri erisimini yapar
+- model veritabanindaki yapinin tanimini tutar
 
-### admin
+Observation modulu bu mevcut mimariyi bozmadan eklendi.
 
-- sistem ve okul yapisi yonetimi yapar
-- varsayilan olarak counselor private notes gormemelidir
+## 4. Observation Modulu Neden Ilk Secildi
 
-### branch_teacher
+Yeni urun kimligine gecerken hassas takip alanlari arasinda ilk adim olarak observation secildi.
 
-- somut sinif ici observation girer
-- counselor private notes goremez
+Bunun nedeni:
 
-### homeroom_teacher
+- observation, ogrenci takip sisteminin en temel veri giris noktalarindan biridir
+- timeline, counseling ve red-flag gibi alanlar ileride observation verisinden beslenecektir
+- observation, behavior ve support takibini baslatan cekirdek kayittir
 
-- ogrencinin genel surec takibini yapar
-- counselor private notes goremez
+Kisa fikir:
 
-### counselor
+- once observation
+- sonra observation uzerinden okuma ve baglama yapan moduller
 
-- en genis observation gorunumune sahiptir
-- private counseling notes tutar
-- red-flag incelemesini yonetir
+## 5. Observation Nedir
 
-## 5. Observation MVP Kapsami
+Observation, belirli bir ogrenci icin, belirli bir tarihte, belirli bir okul personeli tarafindan sisteme girilen somut okul ici gozlem kaydidir.
 
-Ilk surumde hedef:
+Temel ilke:
+
+- yorum degil gozlem yazilir
+
+Yanlis ornek:
+
+- "sorunlu ogrenci"
+
+Dogru ornek:
+
+- "ders boyunca 3 kez arkadasinin sozunu kesti"
+
+Bu ilke secildi cunku sistemin amaci ogrenciyi etiketlemek degil, gozlenebilir durumu kayit altina almaktir.
+
+## 6. Observation Domain Siniri
+
+Observation modulu icin baslangicta su sinirlar cizildi:
+
+Observation icinde olacaklar:
+
 - observation create
 - observation list
 - single observation detail
 
-Ilk surumde olmayacaklar:
+Observation ilk MVP icinde olmayacaklar:
+
 - update
 - delete
 - medya upload
 - risk score
 - kalici etiketleme
 
-## 6. Observation Kaydinin Tanimi
+Bu sinir sayesinde ilk surum kucuk tutuldu ve gereksiz complexity ertelendi.
+
+## 7. Observation Ile Ilgili Temel Domain Kararlari
+
+### 7.1 Ana kullanicilar
+
+Urun dusuncesinde observation ile ilgilenecek roller:
+
+- admin
+- branch_teacher
+- homeroom_teacher
+- counselor
+
+Fakat kod tabaninin mevcut gercek durumu farkliydi.
+
+Kodda bulunan aktif roller:
+
+- `admin`
+- `teacher`
+- `student`
+
+Bu nedenle observation icin gecici teknik karar su oldu:
+
+- observation endpointleri su an sadece `admin` ve `teacher` rollerine acik olacak
+- `student` observation endpointlerini kullanamayacak
+- daha ince rol ayrimi daha sonra ayri bir rol refactor'u ile ele alinacak
+
+### 7.2 Observation ile counseling ayri kalacak
 
 Observation:
 
-Belirli bir tarihte, belirli bir ogrenci icin, belirli bir personelin girdigi somut okul ici gozlem kaydidir.
+- okul ici somut gozlem
 
-Temel ilke:
-- yorum degil, gozlem yazilir
+Counseling:
 
-Yanlis ornek:
-- "sorunlu ogrenci"
+- daha hassas ve daha farkli bir domain
 
-Dogru ornek:
-- "ders boyunca 3 kez arkadasinin sozunu kesti"
+Bu ayrim bilincli olarak korundu. Observation icinde counselor private notes tutulmayacak.
 
-## 7. Observation Alanlari
+### 7.3 Timeline ayri domain ama ilk MVP'de ayri model olmak zorunda degil
 
-### Request body'den gelecek alanlar
+Observation sonrasinda timeline modulunun gelmesi daha mantikli goruldu.
+
+Sebep:
+
+- timeline, observation verisini zaman ekseninde bir araya getiren okuma odakli bir katman olabilir
+- counseling kadar hassas degildir
+- observation altyapisinin uzerine daha kolay oturur
+
+## 8. Observation Veri Tasarimi
+
+### 8.1 Request body ile gelen alanlar
 
 - `studentId`
 - `category`
@@ -114,7 +164,7 @@ Dogru ornek:
 - `summary`
 - `details`
 
-### Sistem tarafinda set edilecek alanlar
+### 8.2 Sistem tarafinda set edilen alanlar
 
 - `id`
 - `recordedBy`
@@ -123,7 +173,7 @@ Dogru ornek:
 - `createdAt`
 - `updatedAt`
 
-### Onerilen category enum
+### 8.3 Category enum karari
 
 - `class_participation`
 - `attendance_behavior`
@@ -132,15 +182,15 @@ Dogru ornek:
 - `rule_violation`
 - `support_need`
 
-### Onerilen flagStatus enum
+### 8.4 Flag status enum karari
 
 - `normal`
 - `needs_review`
 - `reviewed`
 
-## 8. Validation Kurallari
+## 9. Validation Kurallari
 
-### Request validation
+Observation create request'i icin temel validation kurallari:
 
 - `studentId` zorunlu
 - `category` zorunlu ve enum icinde olmali
@@ -148,66 +198,62 @@ Dogru ornek:
 - `summary` zorunlu
 - `details` zorunlu
 
-### Pratik sinirlar
+Pratik sinirlar:
 
 - `summary`: min 5, max 120 karakter
 - `details`: min 10, max 1000 karakter
 - `observedAt`: gelecekte bir tarih olmamali
 
-### Guvenlik mantigi
+Guvenlik kurali:
 
 - `recordedBy` request body'den gelmez
 - `recordedByRole` request body'den gelmez
 - bu alanlar auth context'ten set edilir
 
-## 9. Yetki Mantigi
+## 10. Hata ve Yetki Mantigi
 
-### Temel ayrim
-
-RBAC sunu sorar:
-- bu rol genel olarak bu islemi yapabilir mi
-
-Domain policy sunu sorar:
-- bu spesifik kullanici, bu spesifik ogrenci uzerinde bu islemi yapabilir mi
-
-### Observation create
-
-Ilk MVP'de observation create yapabilecek roller:
-- branch_teacher
-- homeroom_teacher
-- gerekirse counselor
-
-Ek kural:
-- branch_teacher her ogrenciye degil, bagli oldugu ogrenciler icin kayit girebilmelidir
-
-### Observation read
-
-- branch_teacher sinirli gorunum alir
-- homeroom_teacher daha genis gorunum alir
-- counselor en genis gorunumu alir
-- counselor private notes observation modulu icinde tutulmaz
-
-## 10. Hata Mantigi
+### 10.1 Hata kodu beklentisi
 
 - `400 Bad Request`: request formati veya alanlar hatali
 - `401 Unauthorized`: token yok veya gecersiz
-- `403 Forbidden`: rol veya domain policy yetkisi yok
+- `403 Forbidden`: rol yetkisi yok
 - `404 Not Found`: ogrenci veya observation bulunamadi
 - `500 Internal Server Error`: beklenmeyen sunucu hatasi
 
-## 11. Endpoint MVP
+### 10.2 RBAC ve domain policy farki
+
+RBAC su soruyu sorar:
+
+- bu rol bu endpointi genel olarak kullanabilir mi
+
+Domain policy su soruyu sorar:
+
+- bu spesifik kullanici bu spesifik ogrenci uzerinde islem yapabilir mi
+
+Observation MVP'de once minimum RBAC kapisi eklendi.
+Daha ileri domain policy sonraya birakildi.
+
+## 11. Observation Endpoint Kararlari
+
+Observation MVP endpointleri:
 
 - `POST /api/v1/observations`
-- `GET /api/v1/students/:id/observations`
+- `GET /api/v1/observations/student/:id`
 - `GET /api/v1/observations/:id`
 
-Ilk MVP disinda:
+Bilerek MVP disinda birakilan endpointler:
+
 - `PUT /api/v1/observations/:id`
 - `DELETE /api/v1/observations/:id`
 
+Not:
+
+- ilk planda list endpointi `GET /api/v1/students/:id/observations` diye dusunuldu
+- uygulama icinde daha tutarli bir observation route yapisi icin final karar `GET /api/v1/observations/student/:id` oldu
+
 ## 12. Klasor Yapisi
 
-Observation modulu `src/modules` altinda feature bazli yapida ilerleyecek.
+Observation modulu `src/modules` altinda feature bazli yapida kuruldu.
 
 ```text
 backend/src/modules/observation/
@@ -229,137 +275,126 @@ backend/src/modules/observation/
 
 ## 13. Katman Sorumluluklari
 
-### controller
+### Controller
 
 - request alir
 - auth bilgisini service'e tasir
 - response doner
+- hata durumlarini uygun status code ile cevaba cevirir
 
-### service
+### Service
 
-- business logic
-- ogrenci var mi kontrolu
-- domain policy kontrolu
-- red-flag tetik mantigi
+- business logic tasir
+- ogrenci var mi kontrol eder
+- observation var mi kontrol eder
+- create, list ve detail akislarini yonetir
+- ileride domain policy kurallarinin eklenecegi katmandir
 
-### repository
+### Repository
 
-- veri erisim katmani
-- create ve read sorgulari
+- veri erisim katmanidir
+- create ve read sorgularini yapar
+- business karar vermez
+- yetki kontrolu yapmaz
 
-### model
+### Model
 
-- mongoose schema
-- enum alanlari
-- timestamps
+- mongoose schema'yi tanimlar
+- enum alanlarini tutar
+- timestamps yapisini tanimlar
 
-### validation
+### Validation
 
-- request body yapisini kontrol eder
+- request body'sinin seklini kontrol eder
+- is kurali kontrolu yapmaz
 
-## 13.1 Su Ana Kadar Yazdigimiz Dosyalar Ne Ise Yarar
-
-Bu bolum tekrar ederken hizli hatirlatma icin yazildi.
+## 14. Dosya Bazli Ne Yazildi
 
 ### `observation.types.ts`
 
-Bu dosya observation modulunun ortak dilidir.
+Bu dosya observation modulunun ortak veri dilini tanimlamak icin yazildi.
 
-Icine sunlari koyduk:
+Icindeki ana yapilar:
+
 - `ObservationCategory`
 - `ObservationFlagStatus`
 - `CreateObservationInput`
 - `ObservationRecord`
 
-Kisa mantik:
-- `ObservationCategory`: observation turlerini sabit bir listeye baglar
-- `ObservationFlagStatus`: kayit normal mi, inceleme gerekiyor mu bilgisini tutar
-- `CreateObservationInput`: create isteginde hangi alanlarin beklendigini anlatir
-- `ObservationRecord`: observation kaydinin tam halini anlatir
+Neden onemli:
 
-Neden once bunu yazdik:
-- validation hangi alanlari kontrol edecegini bilir
-- model hangi alanlari tasiyacagini bilir
+- validation neyi kontrol edecegini bilir
+- model hangi alanlari tutacagini bilir
 - service hangi input ile calisacagini bilir
 
 ### `observation.validation.ts`
 
-Bu dosya gelen istegin sekil olarak dogru olup olmadigini kontrol eder.
+Bu dosya create request'ini dogrulamak icin yazildi.
 
-Icine sunlari koyduk:
-- `createObservationSchema`
-- `CreateObservationBody`
+Ana gorevleri:
 
-Kisa mantik:
-- `studentId` bos mu
-- `category` dogru enum mu
+- `studentId` var mi
+- `category` dogru mu
 - `observedAt` tarih mi
-- `summary` yeterince uzun mu
-- `details` yeterince uzun mu
-
-Onemli not:
-- validation is kurali kontrolu degildir
-- validation sadece gelen verinin yapisini kontrol eder
-- "bu ogretmen bu ogrenci icin kayit girebilir mi" sorusu service katmaninda cozulur
+- `summary` ve `details` sinirlara uyuyor mu
 
 ### `observation.model.ts`
 
-Bu dosya observation kaydinin veritabaninda nasil tutulacagini tanimlar.
+Bu dosya observation kaydinin veritabaninda nasil tutulacagini tanimlamak icin yazildi.
 
-Icine sunlari koyduk:
-- `IObservation`
-- `observationSchema`
-- `Observation` mongoose modeli
+Onemli alanlar:
 
-Alan mantigi:
-- `studentId`: observation hangi ogrenciye ait
-- `category`: gozlemin turu
-- `observedAt`: olay ne zaman oldu
-- `summary`: kisa ozet
-- `details`: detayli gozlem
-- `recordedBy`: kaydi kim girdi
-- `recordedByRole`: kaydi giren kisinin rolu
-- `flagStatus`: kayit review gerektiriyor mu
-
-Onemli fark:
-- `observedAt` olay zamani
-- `createdAt` kaydin sisteme yazildigi zaman
+- `studentId`
+- `category`
+- `observedAt`
+- `summary`
+- `details`
+- `recordedBy`
+- `recordedByRole`
+- `flagStatus`
 
 ### `observation.repository.ts`
 
-Bu dosya veritabaniyla konusan katmandir.
+Bu dosya observation verisiyle konusan veri katmanidir.
 
-Su fonksiyonlari yazdik:
+Yazilan temel fonksiyonlar:
+
 - `createObservation`
 - `getObservationsByStudentId`
 - `getObservationById`
 
-Kisa mantik:
-- repository veri ceker veya kaydeder
-- business karar vermez
-- yetki kontrolu yapmaz
-
-Yani:
-- "kaydi olustur" der
-- "bu ogrencinin kayitlarini getir" der
-- "bu observation kaydini getir" der
-
 ### `observation.service.ts`
 
-Bu dosya controller ile repository arasindaki dusunen katmandir.
+Bu dosya observation modulunun dusunen katmanidir.
 
-Bu dosyada yapilacaklar:
-- ogrenci var mi kontrol etmek
-- create/list/detail akislarini yonetmek
-- ileride domain policy kontrolu eklemek
-- gerekirse red-flag mantigini tetiklemek
+Son durumda service tarafinda su mantiklar vardir:
 
-Kisa mantik:
-- validation = veri dogru mu
-- repository = veri kaydet / getir
-- service = is kurali dogru mu
+- create oncesi ogrenci var mi kontrolu
+- list oncesi ogrenci var mi kontrolu
+- detail icin observation var mi kontrolu
+- create sirasinda `recordedBy` ve `recordedByRole` set edilmesi
 
-## 14. Uygulama Sirasi
+### `observation.controller.ts`
+
+Bu dosya request ve response akisini yonetir.
+
+Son durumda controller:
+
+- create/list/detail endpointlerini calistirir
+- service'ten gelen "not found" durumlarini uygun response'a cevirir
+
+### `observation.routes.ts`
+
+Bu dosya endpointleri uygulamaya baglar.
+
+Son durumda route'larda:
+
+- `authMiddleware` var
+- minimum `authorizeRoles("admin", "teacher")` korumasi var
+
+## 15. Uygulama Sirasinda Izlenen Yol
+
+Observation modulu rastgele degil, kontrollu bir sira ile gelistirildi:
 
 1. `types`
 2. `validation`
@@ -368,272 +403,155 @@ Kisa mantik:
 5. `service`
 6. `controller`
 7. `routes`
-8. `app.ts` baglantisi
+8. `app.ts` entegrasyonu
+9. create testi
+10. list testi
+11. detail testi
+12. hardening
 
-## 14.1 Branch Onerisi
+Bu siralama secildi cunku:
 
-Bu modul icin ayri bir feature branch kullanilmasi onerilir.
+- once veri sozlesmesi netlesti
+- sonra veri yapisi kuruldu
+- sonra is akisi baglandi
+- en sonda manuel test ve sertlestirme yapildi
 
-Onerilen branch adi:
+## 16. Uygulamada Neler Yapildi
 
-- `feature/observation-module`
-
-Amac:
-- yeni domaini mevcut kodlari dagitmadan gelistirmek
-- observation modulu tamamlanana kadar degisiklikleri kontrollu tutmak
-
-### Simdi acilacak branch
-
-- `feature/observation-module`
-
-### Yol haritasinda isimleri belirlenmis ama daha sonra acilacak branchler
-
-- `feature/timeline-module`
-- `feature/counseling-module`
-- `feature/red-flag-module`
-- `feature/ai-summary-module`
-- `feature/school-structure-module`
-- `feature/audit-log-module`
-
-Not:
-- tum branchleri bastan acmak zorunlu degildir
-- en saglikli yaklasim, sadece aktif olarak gelistirilecek branch'i acmaktir
-- diger branch adlari roadmap ve planlama amaciyla simdiden belirlenmistir
-
-## 14.2 Iki Gunluk Calisma Plani
-
-Bu plan ilk MVP observation modulu icindir.
-
-### Gun 1
-
-Hedef:
-- veri sozlesmesini ve temel veri katmanini kurmak
-
-Adimlar:
-
-1. feature branch ac
-2. `observation.types.ts` icinde enum ve type'lari tanimla
-3. `observation.validation.ts` icinde create request validation kur
-4. `observation.model.ts` icinde mongoose schema'yi yaz
-5. `observation.repository.ts` icinde create ve read sorgularini hazirla
-6. category ve flag enum isimlerini tekrar kontrol et
-7. student iliskisi icin `studentId` alaninin modelde dogru tanimlandigini kontrol et
-8. gun sonunda dosya isimleri ve klasor yapisini tekrar gozden gecir
-
-Gun 1 sonunda beklenen durum:
-- observation tipi belli
-- validation belli
-- model belli
-- repository iskeleti hazir
-
-### Gun 2
-
-Hedef:
-- business logic, endpoint akisi ve uygulama entegrasyonunu tamamlamak
-
-Adimlar:
-
-1. `observation.service.ts` icinde create/list/detail akisini kur
-2. service katmaninda ogrenci var mi kontrolu ekle
-3. service katmaninda role + domain policy mantigini basit MVP seviyesinde uygula
-4. `observation.controller.ts` icinde create/list/detail controller'larini yaz
-5. `observation.routes.ts` icinde endpointleri bagla
-6. `app.ts` icine observation route'unu ekle
-7. Postman ile create endpoint test et
-8. Postman ile student observation list endpointini test et
-9. Postman ile single observation detail endpointini test et
-10. hata kodlarini gozden gecir: `400`, `401`, `403`, `404`, `500`
-11. naming, import ve response yapisini temizle
-
-Gun 2 sonunda beklenen durum:
-- observation modulu temel olarak calisiyor
-- route uygulamaya baglanmis
-- ilk manuel testler gecmis
-
-### Tampon Gun Onerisi
-
-Zorunlu degil ama cok faydali olur.
-
-Bu gunde sunlari yapabilirsin:
-
-1. bug fix
-2. error message temizligi
-3. notes guncelleme
-4. README veya teknik dokuman guncelleme
-5. entegrasyon sirasinda gereken kucuk eski kod duzeltmeleri
-
-## 14.3 Net Yapilacaklar Listesi
-
-Observation modulu icin su anda net backlog:
-
-1. `feature/observation-module` branch'ini ac
-2. `observation.types.ts` dosyasini doldur
-3. `observation.validation.ts` dosyasini doldur
-4. `observation.model.ts` dosyasini doldur
-5. `observation.repository.ts` dosyasini doldur
-6. `observation.service.ts` dosyasini doldur
-7. `observation.controller.ts` dosyasini doldur
-8. `observation.routes.ts` dosyasini doldur
-9. `app.ts` icine route baglantisini ekle
-10. create observation endpointini test et
-11. list observation endpointini test et
-12. single observation detail endpointini test et
-13. gereken eski kod entegrasyonlarini kontrollu sekilde yap
-14. notlari ve dokumani guncelle
-
-## 14.4 Eski Kodlara Ne Zaman Dokunulacak
-
-Temel ilke:
-
-- once observation modulu kendi icinde yazilacak
-- sonra mevcut sistemle temas noktalari duzenlenecek
-
-Observation tamamlanmadan eski kodlarda buyuk daginik duzenleme yapilmayacak.
-
-Observation sonrasi dokunulabilecek yerler:
-
-- `app.ts` route baglantisi
-- role mantiginda yeni roller veya rol genisletmeleri
-- auth tarafinda gerekirse rol destekleri
-- student modulu ile observation iliskisi
-- README ve teknik dokumanlar
-
-Bu yaklasim daha guvenlidir cunku:
-- once yeni modul kendi siniriyla kurulur
-- sonra kontrollu entegrasyon yapilir
-- mevcut calisan kodlar gereksiz yere erken bozulmaz
-
-## 14.5 Su Ana Kadarki Checkpoint Ozeti
-
-Bu bolum, kafa karistiginda hizli tekrar icin eklendi.
-
-### Simdiye kadar ne yaptik
-
-- projenin yeni urun kimligini netlestirdik
-- observation modulunu ilk gelisecek domain olarak sectik
-- observation icin klasor yapisini kurduk
-- su dosyalari olusturuldu:
-  - `observation.types.ts`
-  - `observation.validation.ts`
-  - `observation.model.ts`
-  - `observation.repository.ts`
-  - `observation.service.ts`
-  - `observation.controller.ts`
-  - `observation.routes.ts`
-- `app.ts` icine observation route baglantisi eklendi
-- TypeScript tarafinda cikan observation ve eski strict hatalari temizlendi
-- `npm run build` basariyla gecti
-- observation modulu ilk checkpoint olarak commitlendi
-
-### Su an elimizde ne var
-
-Observation modulu icin calisabilir bir backend iskeleti var.
-
-Yani su an:
-- dosya yapisi hazir
-- import/export zinciri bagli
-- route uygulamaya bagli
-- build temiz geciyor
-
-### Henuz ne eksik
-
-Observation create akisi henuz tam gercek hayata uygun degil.
-
-Cunku model su alanlari bekliyor:
-- `recordedBy`
-- `recordedByRole`
-- `flagStatus`
-
-Ama create request'te bu alanlar kullanicidan gelmiyor ve service tarafinda da henuz set edilmiyor.
-
-Yani:
-- iskelet tamam
-- compile tamam
-- siradaki ana is, create akisini gercek modele uydurmak
-
-### Branch notu
-
-Su an aktif branch:
-
-- `feature/observation-module`
-
-Kural:
-- observation tamamlanmadan branch degistirme
-- observation ile ilgili isler bu branch icinde devam edecek
-- yeni modula gecmeden once `git status` + `git commit` ile temiz checkpoint alinacak
-
-### Tek cumlelik ozet
-
-Dusunce asamasindan cikip observation modulu icin ilk calisabilir backend omurgasi kuruldu.
-
-## 14.6 Observation Phase 1 Tamamlandi
-
-Bu bolum, observation modulunun ilk gercek backend checkpoint'ini kaydetmek icin eklendi.
-
-### Phase 1'de tamamlananlar
+Observation modulu icin tamamlananlar:
 
 - observation klasor yapisi kuruldu
 - `types`, `validation`, `model`, `repository`, `service`, `controller`, `routes` dosyalari yazildi
 - `app.ts` icine observation route baglantisi eklendi
-- create observation akisi modele uygun hale getirildi
+- create observation akisi yazildi
 - `recordedBy` ve `recordedByRole` service tarafinda set edildi
 - auth middleware observation route'larina baglandi
-- token payload ile observation create akisi uyumlu hale getirildi
-- TypeScript build temiz sekilde gecti
-- `POST /api/v1/observations` endpoint'i gercek istek ile test edildi
-- observation create isteginden `201 Created` cevabi alindi
-- observation branch'inde birden fazla temiz commit alindi
+- token payload ile user uyumu duzeltildi
+- TypeScript build temiz gecti
+- `POST /api/v1/observations` endpointi manuel olarak test edildi
+- `GET /api/v1/observations/student/:id` endpointi manuel olarak test edildi
+- `GET /api/v1/observations/:id` endpointi manuel olarak test edildi
+- service katmanina `student exists` kontrolu eklendi
+- olmayan ogrenci durumlari icin `404` davranisi netlestirildi
+- olmayan observation durumu icin `404` davranisi eklendi
+- observation route'larina minimum role guard eklendi
+- observation endpointleri gecici olarak sadece `admin` ve `teacher` rollerine acildi
+- branch uzerinde temiz commit ve push alindi
 
-### Phase 1 sonunda neyi kanitladik
+## 17. Observation Modulu Bugun Hangi Durumda
 
-- observation modulu sadece dosya olarak degil, calisan backend akisi olarak da kuruldu
-- auth korumali observation create endpoint'i calisiyor
-- gecerli `studentId` ile observation kaydi olusturulabiliyor
-- sistem `recordedBy`, `recordedByRole` ve `flagStatus` alanlarini beklenen sekilde dolduruyor
+Observation modulu icin bugun dogru durum ifadesi:
 
-### Bu asamada henuz yapilmayan ama sonraya birakilanlar
+- `backend MVP complete`
+- `manual testing complete for core happy paths`
+- `basic hardening complete`
 
-- list endpointinin manuel testleri
-- detail endpointinin manuel testleri
-- service katmaninda ogrenci var mi kontrolu
-- daha guclu role/policy kontrolu
-- error handling ve response standardizasyonu
+Bu ne demek:
 
-### Faz durumu
+- create calisiyor
+- list calisiyor
+- detail calisiyor
+- temel not found davranislari var
+- minimum rol korumasi var
 
-Observation modulu icin dogru durum ifadesi:
+Bu ne demek degil:
 
-- `backend implementation complete`
-- `manual testing partially complete`
-- `polish and hardening pending`
+- tum ileri seviye policy kurallari tamamlandi
+- tum response standardizasyonu bitti
+- rol refactor'u yapildi
 
-### Branch notu
+## 18. Observation Icinde Bilerek Sonraya Birakilanlar
 
-Observation Phase 1 tamamlanmadan branch degistirilmedi.
+Bu maddeler observation'in temel MVP'sini kapatmak icin zorunlu gorulmedi:
 
-Observation sonrasi yeni branch'e gecmeden once:
-- `git status`
-- son commit
-- checkpoint notu
+- `branch_teacher`, `homeroom_teacher`, `counselor` ayrimini koda tasimak
+- daha ince domain policy
+- response standardizasyonunu daha da guclendirmek
+- update ve delete endpointleri
+- media upload
+- red-flag otomasyonu
+- AI summary entegrasyonu
 
-tamamlandi.
+Bu kararlar bilincli olarak ertelendi; cunku observation'in temel create/list/detail omurgasi once tamamlanmak istendi.
 
-## 15. AI Siniri
+## 19. Branch Disiplini
 
-AI bu domain icinde sadece destekleyici rolde kullanilmalidir.
+Observation modulu icin kullanilan branch:
 
-AI sunlari yapabilir:
+- `feature/observation-module`
+
+Bu branch icin uygulanan ilke:
+
+- observation bitmeden branch degistirme
+- yeni modula observation kapanmadan gecme
+- once temiz checkpoint al
+- sonra yeni branch ac
+
+Observation son durum:
+
+- bu branch icinde observation icin MVP + temel hardening tamamlandi
+
+## 20. Sonraki Modul Karari
+
+Observation sonrasinda bir sonraki mantikli modul olarak `timeline` onerildi.
+
+Gerekceler:
+
+- timeline observation verisinin uzerine daha dogal oturur
+- counseling'e gore daha az hassaslik ve policy karmasasi vardir
+- ilk MVP'de ayri veri modeli zorunlu olmayabilir
+- read odakli bir modul olarak daha dusuk riskle baslanabilir
+
+Onerilen sonraki branch:
+
+- `feature/timeline-module`
+
+## 21. Rol Sistemi Icinde Bilincli Gecici Karar
+
+Urun dusuncesi ile mevcut kod tabani arasinda bir gecis durumu vardir.
+
+Urun tarafinda hedef roller:
+
+- admin
+- branch_teacher
+- homeroom_teacher
+- counselor
+
+Kod tabaninda aktif roller:
+
+- admin
+- teacher
+- student
+
+Bu yuzden observation icin gecici teknik karar su oldu:
+
+- observation endpointleri `admin` ve `teacher` ile korunacak
+- `student` observation kullanicisi olmayacak
+
+Bu gecici karar dogrudur cunku:
+
+- urun kimligine daha yakindir
+- mevcut kodla uyumludur
+- buyuk rol refactor'unu observation branch'ine yuklemez
+
+## 22. AI Siniri
+
+AI observation domaininde sadece destekleyici rolde dusunulmelidir.
+
+AI'nin yapabilecekleri:
+
 - observation kayitlarini ozetlemek
 - timeline ozetlemek
-- counselor icin yardimci metin uretmek
+- personel icin yardimci metin uretmek
 
-AI sunlari yapmamalidir:
+AI'nin yapmamasi gerekenler:
+
 - tani koymak
 - risk puani vermek
 - ogrenciyi etiketlemek
 - ceza veya kritik karar onermek
 
-## 16. Ilk Surumde Eklenmeyecek Hassas Alanlar
+## 23. Ilk Surumde Bilerek Tutulmayan Hassas Alanlar
 
 - TCKN
 - resmi kimlik verileri
@@ -643,56 +561,23 @@ AI sunlari yapmamalidir:
 - kalici ogrenci etiketi
 - asiri detayli aile ici hassas veri
 
-## 17. Yeni Chat Icin Hazir Prompt
+Bu sinir urun guvenligi ve etik cizgiyi korumak icin bilincli olarak cizildi.
 
-Asagidaki metin yeni sohbet acarken kullanilabilir:
+## 24. Tek Cumlelik Ozet
 
-```text
-SmartStudent projemde observation modulu icin Phase 1'i tamamladim. Yeni sohbette kaldigim yerden teknik mentor gibi devam etmeni istiyorum.
+Observation modulu, okul personelinin ogrenciyle ilgili somut gozlemlerini kaydetmesi icin tasarlandi; create, list ve detail akislari tamamlandi, temel hardening yapildi ve sonraki mantikli adim olarak timeline modulune gecilmesi planlandi.
 
-Kisa baglam:
-- Proje artik ogrencilerin kullandigi portal degil
-- Okul personeli icin okul ici ogrenci takip ve destek sistemi olarak yeniden konumlandi
-- Backend stack: Node.js + Express + TypeScript + MongoDB + Redis
-- Mimari: Controller -> Service -> Model/Repository
-- Auth, JWT, RBAC, student CRUD, chatbot, validation ve temel error handling zaten var
+## 25. Dokumantasyon ve Mentor Notu
 
-Observation modulu icin tamamlananlar:
-- klasor yapisi kuruldu
-- observation.types.ts
-- observation.validation.ts
-- observation.model.ts
-- observation.repository.ts
-- observation.service.ts
-- observation.controller.ts
-- observation.routes.ts
-- app.ts entegrasyonu yapildi
-- create observation akisi yazildi
-- auth middleware route'lara eklendi
-- token payload ile userId uyumu duzeltildi
-- TypeScript build gecti
-- POST /api/v1/observations endpointinden 201 Created cevabi alindi
+Bu dosya, proje icindeki en onemli referans dokumanlardan biri olarak korunacaktir.
 
-Observation modulu dosya plani:
-- backend/docs/observation-module-plan.md
+Bu dosya ile ilgili calisma ilkesi:
 
-Su an istedigim:
-- once observation modulu icin tam olarak neyin kaldigini netlestir
-- sonra bir sonraki en dogru adimi sec
-- bana junior developer seviyesine uygun, kucuk adimlarla, sade ve ogretici sekilde ilerle
-- buyuk hazir kod bloklari verme
-- her seyi mikro adimlara bol
-- once ne yaptigimizi ve neden yaptigimizi kisa anlat
+- observation modulu ile ilgili nedenler burada kalacak
+- ne istendi, ne yazildi ve neden o sekilde yazildigi bu dokumanda izlenebilir olacak
+- observation ile ilgili yeni kararlar geldikce bu dokuman guncellenecek
+- geri donup bakildiginda sadece kod degil, karar mantigi da okunabilecek
 
-Muhtemel sonraki odaklardan biri:
-- observation list/detail endpoint testleri
-- observation service icin ogrenci var mi kontrolu
-- role/policy mantigini guclendirme
-- ya da bir sonraki modul olarak timeline veya counseling secimi
+Proje genelinde mentor modunda ilerleme ve dokumantasyon disiplini icin ek referans:
 
-Onemli:
-- branch disiplini kullaniyorum
-- observation branch'inde Phase 1 tamamlandi
-- yeni adimlarda neyi ayni branch'te yapacagimi, ne zaman yeni branch acacagimi da netlestir
-- koddan once dusunce sistemini kurmaya devam etmek istiyorum
-```
+- `backend/docs/mentor-mode-working-agreement.md`

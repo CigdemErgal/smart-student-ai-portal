@@ -17,7 +17,7 @@ export const registerUser = async (data: RegisterInput) => {
     fullName: data.fullName,
     email: data.email,
     password: hashedPassword,
-    role: data.role ?? "student",
+    role: data.role ?? "counselor",
   });
   return newUser;
 };

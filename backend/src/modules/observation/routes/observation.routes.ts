@@ -12,19 +12,19 @@ const router = Router();
 router.post(
   "/",
   authMiddleware,
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin", "homeroom_teacher", "branch_teacher", "counselor"),
   createObservationController,
 );
 router.get(
   "/student/:id",
   authMiddleware,
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin", "homeroom_teacher", "branch_teacher", "counselor"),
   getStudentObservationsController,
 );
 router.get(
   "/:id",
   authMiddleware,
-  authorizeRoles("admin", "teacher"),
+  authorizeRoles("admin", "homeroom_teacher", "branch_teacher", "counselor"),
   getObservationByIdController,
 );
 

@@ -8,7 +8,9 @@ export const registerSchema = z.object({
     .max(50, "Full name must be at most 50 characters"),
   email: z.string().email("Invalid email format"),
   password: z.string().min(6, "Password must be at least 6 characters"),
-  role: z.enum(["student", "teacher", "admin"]).optional(),
+  role: z
+    .enum(["admin", "homeroom_teacher", "branch_teacher", "counselor"])
+    .optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;

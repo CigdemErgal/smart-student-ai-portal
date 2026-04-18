@@ -6,7 +6,7 @@ export interface IUser extends Document {
   fullName: string;
   email: string;
   password: string;
-  role: "student" | "teacher" | "admin";
+  role: "admin" | "homeroom_teacher" | "branch_teacher" | "counselor";
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -33,8 +33,8 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["student", "teacher", "admin"],
-      default: "student",
+      enum: ["admin", "homeroom_teacher", "branch_teacher", "counselor"],
+      default: "counselor",
     },
     isActive: {
       type: Boolean,
