@@ -26,7 +26,7 @@ export const createStudentSchema = z.object({
     .string()
     .min(2, "School name must be at least 2 characters")
     .max(100, "School name must be at most 100 characters"),
-  userId: z.string().min(1, "User ID is required"),
+
   isActive: z.boolean().optional(),
 });
 
@@ -63,7 +63,6 @@ export const updateStudentSchema = z.object({
     .min(2, "School name must be at least 2 characters")
     .max(100, "School name must be at most 100 characters")
     .optional(),
-  userId: z.string().min(1, "User ID is required").optional(),
   isActive: z.boolean().optional(),
 });
 

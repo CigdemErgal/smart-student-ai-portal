@@ -19,7 +19,6 @@ const safeStudentResponse = (student: {
   className: string;
   section: string;
   schoolName: string;
-  userId: unknown;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -32,7 +31,6 @@ const safeStudentResponse = (student: {
     className: student.className,
     section: student.section,
     schoolName: student.schoolName,
-    userId: student.userId,
     isActive: student.isActive,
     createdAt: student.createdAt,
     updatedAt: student.updatedAt,

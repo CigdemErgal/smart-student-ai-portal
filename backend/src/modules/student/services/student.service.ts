@@ -22,7 +22,6 @@ export const createStudent = async (data: CreateStudentInput) => {
     className: data.className,
     section: data.section,
     schoolName: data.schoolName,
-    userId: data.userId,
     isActive: data.isActive ?? true,
   });
   await redisClient.del("students:all");
