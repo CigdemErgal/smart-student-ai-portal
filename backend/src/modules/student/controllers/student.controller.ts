@@ -22,6 +22,7 @@ const safeStudentResponse = (student: {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  classroomId: unknown;
 }) => {
   return {
     id: student._id,
@@ -34,6 +35,7 @@ const safeStudentResponse = (student: {
     isActive: student.isActive,
     createdAt: student.createdAt,
     updatedAt: student.updatedAt,
+    classroomId: student.classroomId,
   };
 };
 
@@ -49,9 +51,11 @@ export const createStudentController = async (req: Request, res: Response) => {
       student: safeStudent,
     });
   } catch (error) {
-    res.status(400).json({
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = message.includes("not found") ? 404 : 400;
+    res.status(statusCode).json({
       message: "Create student failed",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
   }
 };
@@ -72,9 +76,11 @@ export const getAllStudentsController = async (
       students: safeStudents,
     });
   } catch (error) {
-    res.status(400).json({
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = message.includes("not found") ? 404 : 400;
+    res.status(statusCode).json({
       message: "Get all students failed",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
   }
 };
@@ -97,9 +103,11 @@ export const getStudentByIdController = async (req: Request, res: Response) => {
       student: safeStudent,
     });
   } catch (error) {
-    res.status(400).json({
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = message.includes("not found") ? 404 : 400;
+    res.status(statusCode).json({
       message: "Get student by ID failed",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
   }
 };
@@ -123,9 +131,11 @@ export const updateStudentController = async (req: Request, res: Response) => {
       student: safeStudent,
     });
   } catch (error) {
-    res.status(400).json({
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = message.includes("not found") ? 404 : 400;
+    res.status(statusCode).json({
       message: "Update student failed",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
   }
 };
@@ -146,9 +156,11 @@ export const deleteStudentController = async (req: Request, res: Response) => {
       message: "Student deleted successfully",
     });
   } catch (error) {
-    res.status(400).json({
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = message.includes("not found") ? 404 : 400;
+    res.status(statusCode).json({
       message: "Delete student failed",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
   }
 };

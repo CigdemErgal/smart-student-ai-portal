@@ -19,9 +19,12 @@ export const createClassroomController = async (
       classroom,
     });
   } catch (error) {
-    res.status(400).json({
+    const message = error instanceof Error ? error.message : "Unknown error";
+    const statusCode = message === "User not found" ? 404 : 400;
+
+    res.status(statusCode).json({
       message: "Create classroom failed",
-      error: error instanceof Error ? error.message : "Unknown error",
+      error: message,
     });
   }
 };

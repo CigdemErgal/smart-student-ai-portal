@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const createStudentSchema = z.object({
+  classroomId: z.string().min(1, "Classroom ID is required"),
+
   firstName: z
     .string()
     .min(2, "First name must be at least 2 characters")
@@ -64,6 +66,7 @@ export const updateStudentSchema = z.object({
     .max(100, "School name must be at most 100 characters")
     .optional(),
   isActive: z.boolean().optional(),
+  classroomId: z.string().min(1, "Classroom ID is required").optional(),
 });
 
 export type UpdateStudentInput = z.infer<typeof updateStudentSchema>;

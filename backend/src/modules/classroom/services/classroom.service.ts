@@ -1,7 +1,17 @@
 import { Classroom } from "../models/classroom.model";
 import { CreateClassroomInput } from "../validations/classroom.validation";
+import User from "../../../user/model/user.model";
 
 export const createClassroom = async (data: CreateClassroomInput) => {
+  const homeroomTeacher = await User.findById(data.homeroomTeacherId);
+
+  if (!homeroomTeacher) {
+    throw new Error("User not found");
+  }
+  if (homeroomTeacher.role !== "homeroom_teacher") {
+    throw new Error("Selected user is not a homeroom teacher");
+  }
+
   const newClassroom = await Classroom.create({
     schoolName: data.schoolName,
     classLevel: data.classLevel,

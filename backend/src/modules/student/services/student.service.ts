@@ -1,4 +1,5 @@
 import { Student } from "../models/student.model";
+import { Classroom } from "../../classroom/models/classroom.model";
 import {
   CreateStudentInput,
   UpdateStudentInput,
@@ -13,11 +14,14 @@ export const createStudent = async (data: CreateStudentInput) => {
   if (existingStudent) {
     throw new Error("Student already exists with this student number");
   }
-
+  const classroom = await Classroom.findById(data.classroomId);
+  if (!classroom) {
+    throw new Error("Classroom not found");
+  }
   const newStudent = await Student.create({
     firstName: data.firstName,
     lastName: data.lastName,
-
+    classroomId: data.classroomId,
     studentNumber: data.studentNumber,
     className: data.className,
     section: data.section,

@@ -10,6 +10,7 @@ export interface IStudent extends Document {
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+  classroomId: Types.ObjectId;
 }
 
 const studentSchema = new Schema<IStudent>(
@@ -49,6 +50,11 @@ const studentSchema = new Schema<IStudent>(
     isActive: {
       type: Boolean,
       default: true,
+    },
+    classroomId: {
+      type: Schema.Types.ObjectId,
+      ref: "Classroom",
+      required: true,
     },
   },
   {
