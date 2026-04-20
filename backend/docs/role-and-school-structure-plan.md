@@ -282,6 +282,61 @@ Bu adim secildi cunku:
 - ogrenciyi kullanici degil veri varligi olarak netlestirir
 - sonraki `Classroom` modeline gecisi kolaylastirir
 
-## 15. Tek Cumlelik Ozet
+## 15. Bu Fazda Tamamlanan Son Adimlar
+
+Bu branch icinde school structure fazinda observation sonrasi ilk anlamli backend genislemesi yapildi.
+
+Tamamlananlar:
+
+- `Classroom` modeli eklendi
+- classroom icin validation, service, controller ve routes yazildi
+- `app.ts` icine classroom route baglandi
+- classroom create, list ve detail endpointleri calisir hale geldi
+- classroom create icin duplicate kontrolu eklendi
+- `homeroomTeacherId` gercek bir kullanici mi kontrolu eklendi
+- secilen kullanicinin rolu `homeroom_teacher` mi kontrolu eklendi
+- `homeroom_teacher` kendi sinifini acabilir hale getirildi
+- bir `homeroom_teacher` baska ogretmen adina classroom acamaz kuralı eklendi
+
+Student tarafinda tamamlananlar:
+
+- `Student` modelinden eski `userId` baglantisi kaldirildi
+- `Student` modeline `classroomId` eklendi
+- student create validation icine `classroomId` zorunlulugu eklendi
+- student create sirasinda classroom var mi kontrolu eklendi
+- `homeroom_teacher` kendi classroom'una ogrenci ekleyebilir hale getirildi
+- `homeroom_teacher` kendi classroom'undaki ogrenciyi update/delete edebilir hale getirildi
+- `homeroom_teacher` kendi classroom'undaki ogrencileri gorebilir hale getirildi
+- student response icinde `classroom` ve `classroom.homeroomTeacher` bilgisi donmeye basladi
+- response icindeki fazla `classroomId` kirliligi temizlendi
+
+Manuel testlerde dogrulananlar:
+
+- classroom create calisiyor
+- duplicate classroom engelleniyor
+- classroom list calisiyor
+- classroom detail calisiyor
+- `homeroom_teacher` kendi classroom'unu acabiliyor
+- student create classroom baglantisi ile calisiyor
+- student detail icinde classroom ve homeroom teacher bilgisi gorunuyor
+
+Bu adimlarin anlami:
+
+- school structure artik sadece model seviyesi fikir olmaktan cikti
+- gercek endpoint akisi ile calisan ilk domain kurallari kuruldu
+- `homeroom_teacher` icin ilk object-level authorization mantigi backend'e girdi
+
+## 16. Bu Fazda Hala Bekleyenler
+
+Bu branch icinde henuz tamamlanmayan ama sonraki buyuk backend adimlari olan maddeler:
+
+- `branch_teacher` gorunurluk ve yetki mantigi
+- `counselor` gorunurluk mantigi
+- observation visibility policy'nin daha ayrintili hale getirilmesi
+- timeline modulunun baslatilmasi
+- response standardizasyonunun daha da temizlenmesi
+- genel logging ve sonraki kalite katmanlari
+
+## 17. Tek Cumlelik Ozet
 
 Observation sonrasinda bu faza gecilmesinin nedeni, okul yapisi ve rol iliskileri netlesmeden observation gorunurlugu, access policy ve timeline gibi modullerin saglam kurulamayacak olmasidir.
