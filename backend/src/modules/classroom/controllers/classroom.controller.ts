@@ -12,7 +12,8 @@ export const createClassroomController = async (
 ) => {
   try {
     const validatedData = createClassroomSchema.parse(req.body);
-    const classroom = await createClassroom(validatedData);
+    const user = req.user as { userId: string; role: string };
+    const classroom = await createClassroom(validatedData, user);
 
     res.status(201).json({
       message: "Classroom created successfully",
@@ -20,7 +21,12 @@ export const createClassroomController = async (
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unknown error";
-    const statusCode = message === "User not found" ? 404 : 400;
+    const statusCode =
+      message === "User not found"
+        ? 404
+        : message === "Homeroom teacher can only create their own classroom"
+          ? 403
+          : 400;
 
     res.status(statusCode).json({
       message: "Create classroom failed",

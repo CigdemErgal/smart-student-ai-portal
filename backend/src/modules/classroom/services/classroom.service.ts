@@ -2,7 +2,17 @@ import { Classroom } from "../models/classroom.model";
 import { CreateClassroomInput } from "../validations/classroom.validation";
 import User from "../../../user/model/user.model";
 
-export const createClassroom = async (data: CreateClassroomInput) => {
+export const createClassroom = async (
+  data: CreateClassroomInput,
+  user: { userId: string; role: string },
+) => {
+  if (
+    user.role === "homeroom_teacher" &&
+    data.homeroomTeacherId !== user.userId
+  ) {
+    throw new Error("Homeroom teacher can only create their own classroom");
+  }
+
   const homeroomTeacher = await User.findById(data.homeroomTeacherId);
 
   if (!homeroomTeacher) {
@@ -10,6 +20,15 @@ export const createClassroom = async (data: CreateClassroomInput) => {
   }
   if (homeroomTeacher.role !== "homeroom_teacher") {
     throw new Error("Selected user is not a homeroom teacher");
+  }
+  const existingClassroom = await Classroom.findOne({
+    schoolName: data.schoolName,
+    classLevel: data.classLevel,
+    section: data.section,
+  });
+
+  if (existingClassroom) {
+    throw new Error("Classroom already exists");
   }
 
   const newClassroom = await Classroom.create({

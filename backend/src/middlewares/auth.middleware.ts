@@ -28,7 +28,7 @@ export const authMiddleware = (
       process.env.JWT_SECRET || "dev_secret_key",
     );
 
-    req.user = decoded as { id: string; role: string };
+    req.user = decoded as { userId: string; role: string };
 
     next();
   } catch (error) {
